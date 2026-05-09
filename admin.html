@@ -267,6 +267,7 @@
         const ITEMS_PER_PAGE = 8;
         let currentPage = { inventory: 1, stock: 1, stockHist: 1, sales: 1, bilan: 1 };
         let currentImageBase64 = "";
+        let eventSource = null;
 
         // --- FIREBASE WRAPPERS ---
         async function fbGet(path) {
@@ -283,6 +284,20 @@
             await fetch(`${DB_URL}${path}.json`, { method: 'DELETE' });
         }
 
+        // --- AUTO REFRESH (FIREBASE WATCH) ---
+        function startSync() {
+            if (eventSource) eventSource.close();
+            eventSource = new EventSource(`${DB_URL}.json`);
+            eventSource.addEventListener('put', (e) => {
+                const activeSection = document.querySelector('.section.active').id;
+                refreshView(activeSection);
+            });
+            eventSource.addEventListener('patch', (e) => {
+                const activeSection = document.querySelector('.section.active').id;
+                refreshView(activeSection);
+            });
+        }
+
         // --- AUTH ---
         async function checkLogin() {
             const user = document.getElementById('adminUser').value;
@@ -292,9 +307,13 @@
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('admin-content').style.display = 'flex';
                 showSection('inventory');
+                startSync(); // Lancer la synchro après login
             } else { document.getElementById('loginError').style.display = 'block'; }
         }
-        function logout() { location.reload(); }
+        function logout() { 
+            if (eventSource) eventSource.close();
+            location.reload(); 
+        }
 
         function showSection(id) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -318,10 +337,13 @@
             const start = (page - 1) * ITEMS_PER_PAGE;
             const paginatedData = data.slice(start, start + ITEMS_PER_PAGE);
             renderCallback(paginatedData);
-            document.getElementById(containerId).innerHTML = `
-                <button class="page-btn" onclick="changePage('${sectionKey}', ${page - 1})" ${page === 1 ? 'disabled' : ''}>Précédent</button>
-                <span>Page ${page} / ${totalPages}</span>
-                <button class="page-btn" onclick="changePage('${sectionKey}', ${page + 1})" ${page === totalPages ? 'disabled' : ''}>Suivant</button>`;
+            const container = document.getElementById(containerId);
+            if(container) {
+                container.innerHTML = `
+                    <button class="page-btn" onclick="changePage('${sectionKey}', ${page - 1})" ${page === 1 ? 'disabled' : ''}>Précédent</button>
+                    <span>Page ${page} / ${totalPages}</span>
+                    <button class="page-btn" onclick="changePage('${sectionKey}', ${page + 1})" ${page === totalPages ? 'disabled' : ''}>Suivant</button>`;
+            }
         }
         function changePage(key, newPage) { currentPage[key] = newPage; refreshView(key); }
 
@@ -346,7 +368,7 @@
             const sales = Object.values(salesObj).reverse();
             paginate(sales, currentPage.sales, 'pagination-sales', (data) => {
                 document.getElementById('salesTable').innerHTML = data.map(s => {
-                    const details = s.items.map(it => `
+                    const details = (s.items || []).map(it => `
                         <div class="tooltip-item">
                             <img src="${it.img || ''}" style="width:30px;height:30px;border-radius:5px;object-fit:cover;">
                             <div style="flex:1; font-size:11px;"><b>${it.name}</b><br>${it.qty} x ${it.price}F</div>
@@ -354,8 +376,8 @@
                     return `<tr>
                         <td><small>${s.date} ${s.time}</small></td>
                         <td>${s.user}</td>
-                        <td><span class="cart-link">Voir ${s.items.length} articles<div class="tooltip">${details}</div></span></td>
-                        <td><b>${s.total.toLocaleString()} F</b></td>
+                        <td><span class="cart-link">Voir ${(s.items || []).length} articles<div class="tooltip">${details}</div></span></td>
+                        <td><b>${(s.total || 0).toLocaleString()} F</b></td>
                     </tr>`;
                 }).join('');
             }, 'sales');
@@ -397,7 +419,7 @@
             const stock = parseInt(document.getElementById('pStock').value) || 0;
             if(!name || !price || !barcode) return alert("Champs requis");
             await fbPost('products', { name, price, stock, barcode, img: currentImageBase64 });
-            renderProducts();
+            // Pas besoin de rafraîchir manuellement, startSync() s'en occupe
         }
 
         async function openStockModal(key) {
@@ -417,25 +439,26 @@
             await fbPut(`products/${key}/stock`, newStock);
             await fbPost('stockHistory', { date: new Date().toLocaleDateString(), product: p.name, img: p.img, initial: p.stock, added: qty, final: newStock });
             document.getElementById('modalStock').style.display = 'none';
-            refreshView('stock');
+            document.getElementById('addQty').value = '';
         }
 
         async function generateBilan() {
             const salesObj = await fbGet('salesHistory') || {};
             const sales = Object.values(salesObj);
             const filtered = sales.filter(s => {
-                const parts = s.date.split('/');
+                const parts = (s.date || "").split('/');
+                if(parts.length < 3) return false;
                 const isoDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
                 return (!document.getElementById('filterVendeur').value || s.user === document.getElementById('filterVendeur').value) &&
                        (!document.getElementById('filterDate').value || isoDate === document.getElementById('filterDate').value) &&
                        (!document.getElementById('filterMonth').value || parts[1] === document.getElementById('filterMonth').value);
             });
-            let total = 0; filtered.forEach(s => total += s.total);
+            let total = 0; filtered.forEach(s => total += (s.total || 0));
             document.getElementById('bilanTotal').innerText = total.toLocaleString() + " F";
             document.getElementById('bilanCount').innerText = filtered.length;
             paginate(filtered.reverse(), currentPage.bilan, 'pagination-bilan', (data) => {
                 document.getElementById('bilanTable').innerHTML = `<thead><tr><th>Date</th><th>Vendeuse</th><th>Total</th></tr></thead><tbody>` + 
-                data.map(s => `<tr><td>${s.date}</td><td>${s.user}</td><td>${s.total.toLocaleString()} F</td></tr>`).join('') + `</tbody>`;
+                data.map(s => `<tr><td>${s.date}</td><td>${s.user}</td><td>${(s.total || 0).toLocaleString()} F</td></tr>`).join('') + `</tbody>`;
             }, 'bilan');
         }
 
@@ -453,15 +476,17 @@
             a.download = `backup_firebase_${new Date().toLocaleDateString()}.json`; a.click();
         }
 
-        async function deleteItem(path, key) { if(confirm("Supprimer ?")) { await fbDelete(`${path}/${key}`); refreshView(document.querySelector('.section.active').id); }}
-        async function clearSalesHistory() { if(confirm("Vider ?")) { await fbDelete('salesHistory'); renderSales(); }}
-        async function clearStockHistory() { if(confirm("Vider ?")) { await fbDelete('stockHistory'); renderStockHistory(); }}
+        async function deleteItem(path, key) { if(confirm("Supprimer ?")) { await fbDelete(`${path}/${key}`); }}
+        async function clearSalesHistory() { if(confirm("Vider ?")) { await fbDelete('salesHistory'); }}
+        async function clearStockHistory() { if(confirm("Vider ?")) { await fbDelete('stockHistory'); }}
         
         async function addUser() { 
             const name = document.getElementById('uName').value; 
             const pass = document.getElementById('uPass').value; 
+            if(!name || !pass) return;
             await fbPost('users', {name, pass}); 
-            renderUsers(); 
+            document.getElementById('uName').value = '';
+            document.getElementById('uPass').value = '';
         }
         async function renderUsers() { 
             const usersObj = await fbGet('users') || {}; 
@@ -471,7 +496,10 @@
         async function loadBilanFilters() { 
             const usersObj = await fbGet('users') || {}; 
             const users = Object.values(usersObj);
-            document.getElementById('filterVendeur').innerHTML = '<option value="">Toutes</option>' + users.map(u => `<option value="${u.name}">${u.name}</option>`).join(''); 
+            const select = document.getElementById('filterVendeur');
+            const currentVal = select.value;
+            select.innerHTML = '<option value="">Toutes</option>' + users.map(u => `<option value="${u.name}">${u.name}</option>`).join(''); 
+            select.value = currentVal;
         }
     </script>
 </body>
