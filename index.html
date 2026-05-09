@@ -2,204 +2,103 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BOUTIQUE - STYL COSMETIC</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Visionneuse Faso - Firebase</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+
     <style>
-        :root { --sidebar-bg: #0f172a; --sidebar-active: #2563eb; --main-bg: #f8fafc; --success: #22c55e; --danger: #ef4444; --border: #e2e8f0; --accent: #38bdf8; }
-        body { margin: 0; font-family: 'Segoe UI', system-ui, sans-serif; display: flex; height: 100vh; background: var(--main-bg); overflow: hidden; color: #1e293b; }
-        #barcode-catcher { position: absolute; opacity: 0; pointer-events: none; }
-        #loginOverlay { position: fixed; inset: 0; background: var(--sidebar-bg); z-index: 1000; display: flex; align-items: center; justify-content: center; }
-        .login-card { background: white; padding: 40px; border-radius: 24px; width: 320px; text-align: center; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
-        .login-card h2 { color: var(--sidebar-bg); font-weight: 800; margin-bottom: 30px; letter-spacing: -1px; }
-        .login-card input { width: 100%; padding: 14px; margin-bottom: 15px; border: 1px solid var(--border); border-radius: 12px; box-sizing: border-box; font-size: 16px; }
-        .sidebar { width: 260px; background: var(--sidebar-bg); color: white; flex-shrink: 0; display: flex; flex-direction: column; position: relative; z-index: 100; border-right: 1px solid #1e293b; }
-        .sidebar-header { padding: 25px; border-bottom: 1px solid #1e293b; }
-        .user-badge { background: rgba(34, 197, 94, 0.1); color: #4ade80; padding: 10px; border-radius: 12px; font-size: 0.9em; display: flex; align-items: center; gap: 10px; margin-top: 15px; border: 1px solid rgba(34, 197, 94, 0.2); }
-        .seller-history-container { flex: 1; overflow-y: auto; padding: 20px; }
-        .history-title { font-size: 0.75em; color: #64748b; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 15px; font-weight: 700; }
-        .history-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #1e293b; font-size: 0.8em; align-items: center; position: relative; }
-        .cart-link { color: var(--accent); text-decoration: none; cursor: pointer; position: relative; border-bottom: 1px dashed var(--accent); font-weight: 600; }
-        .tooltip { visibility: hidden; width: 260px; background-color: white; color: #1e293b; border-radius: 14px; padding: 15px; position: fixed; z-index: 99999; left: 270px; box-shadow: 10px 10px 40px rgba(0,0,0,0.3); border: 1px solid var(--border); opacity: 0; transition: 0.2s; pointer-events: none; transform: translateX(-10px); }
-        .cart-link:hover .tooltip { visibility: visible; opacity: 1; transform: translateX(0); }
-        .main-content { flex: 1; display: flex; flex-direction: column; min-width: 0; z-index: 10; }
-        .search-bar { padding: 20px; background: white; border-bottom: 1px solid var(--border); }
-        .search-bar input { width: 100%; padding: 15px 20px; border-radius: 14px; border: 1px solid var(--border); font-size: 16px; background: #f8fafc; outline: none; }
-        .products-container { flex: 1; padding: 25px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; align-items: start; }
-        .p-card { background: white; border-radius: 18px; padding: 15px; border: 1px solid var(--border); text-align: center; cursor: pointer; transition: 0.3s; position: relative; height: 230px; display: flex; flex-direction: column; }
-        .p-card:hover { transform: translateY(-5px); border-color: var(--sidebar-active); box-shadow: 0 12px 20px rgba(0,0,0,0.1); }
-        .p-img { height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px;}
-        .p-img img { max-width: 100%; max-height: 100%; object-fit: contain; }
-        .p-name { font-weight: 700; font-size: 0.85em; height: 2.6em; overflow: hidden; margin-top: 5px; line-height: 1.3; }
-        .p-price { color: var(--sidebar-active); font-weight: 800; font-size: 1.1em; margin-top: auto; }
-        .stock-tag { font-size: 0.7em; font-weight: 800; padding: 4px 8px; border-radius: 6px; position: absolute; top: 10px; right: 10px; z-index: 2; }
-        .cart-panel { width: 340px; background: white; border-left: 1px solid var(--border); display: flex; flex-direction: column; z-index: 20; }
-        .cart-list { flex: 1; overflow-y: auto; padding: 15px; }
-        .cart-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: #fbfcfd; border-radius: 12px; margin-bottom: 10px; border: 1px solid #f1f5f9; }
-        .cart-item img { width: 45px; height: 45px; border-radius: 8px; object-fit: cover; }
-        .checkout-box { padding: 25px; border-top: 1px solid var(--border); background: #f8fafc; }
-        .total-row { display: flex; justify-content: space-between; font-size: 1.4em; font-weight: 900; color: var(--sidebar-bg); }
-        .btn-checkout { width: 100%; padding: 18px; background: var(--sidebar-active); color: white; border: none; border-radius: 15px; font-weight: 800; cursor: pointer; margin-top: 15px; transition: 0.2s; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #000; font-family: 'Poppins', sans-serif; display: flex; justify-content: center; overflow: hidden; -webkit-user-select: none; user-select: none; }
+        .iphone-container { width: 100%; max-width: 414px; background: #000; height: 100vh; position: relative; overflow: hidden; }
+        .filter-bar { position: absolute; top: 100px; left: 0; right: 0; display: flex; justify-content: center; gap: 10px; z-index: 40; transition: opacity 0.3s; }
+        .btn-filter { background: rgba(255, 255, 255, 0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 6px 15px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; cursor: pointer; backdrop-filter: blur(10px); }
+        .btn-filter.active { background: #6c5ce7; border-color: #6c5ce7; }
+        .gallery-wrapper { display: flex; width: 100%; height: 100%; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+        .gallery-wrapper::-webkit-scrollbar { display: none; }
+        .photo-slide { min-width: 100%; height: 100%; position: relative; scroll-snap-align: center; display: flex; align-items: center; justify-content: center; background: #000; }
+        .photo-slide img { max-width: 100%; max-height: 100%; object-fit: contain; pointer-events: none; }
+        .nav-btn { position: absolute; top: 50%; transform: translateY(-50%); z-index: 30; background: rgba(255,255,255,0.1); color: white; border: none; width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        .btn-prev { left: 10px; } .btn-next { right: 10px; }
+        .overlay-info { position: absolute; top: 0; left: 0; right: 0; padding: 40px 20px 60px; z-index: 20; color: white; background: linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 100%); transition: opacity 0.3s ease; }
+        .photo-title { font-weight: 600; font-size: 1.2rem; }
+        .photo-date { font-size: 0.75rem; opacity: 0.8; }
+        .hide-ui .overlay-info, .hide-ui .nav-btn, .hide-ui .filter-bar { opacity: 0; pointer-events: none; }
     </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
 
-    <input type="text" id="barcode-catcher" autofocus>
-
-    <div id="loginOverlay">
-        <div class="login-card">
-            <h2>GLAMOUR MARKET</h2>
-            <input type="text" id="uNameInput" placeholder="Identifiant">
-            <input type="password" id="uPassInput" placeholder="Code secret">
-            <button onclick="attemptLogin()" style="width:100%; padding:16px; background:var(--sidebar-active); color:white; border:none; border-radius:12px; cursor:pointer; font-weight:800;">SE CONNECTER</button>
-        </div>
+<div class="iphone-container" id="mainFrame">
+    <div class="filter-bar">
+        <button class="btn-filter active" onclick="filterGallery('TOUT', this)">TOUT</button>
+        <button class="btn-filter" onclick="filterGallery('RECITATION', this)">RECITATION</button>
+        <button class="btn-filter" onclick="filterGallery('CHANT', this)">CHANT</button>
     </div>
 
-    <div class="sidebar">
-        <div class="sidebar-header">
-            <div style="font-weight:900; font-size: 1.2em;">TERMINAL POS</div>
-            <div id="userDisplay" class="user-badge">-</div>
-        </div>
-        <div class="seller-history-container">
-            <div class="history-title">Mes dernières ventes</div>
-            <div id="sellerHistory"></div>
-        </div>
-        <div style="padding: 20px; border-top: 1px solid #1e293b;">
-            <button onclick="loadData()" style="background: none; border: 1px solid #334155; color: #94a3b8; width: 100%; padding: 10px; border-radius: 8px; cursor: pointer;">
-                <i class="fas fa-sync"></i> Rafraîchir
-            </button>
-        </div>
-    </div>
+    <button class="nav-btn btn-prev" onclick="moveSlide(-1)">❮</button>
+    <button class="nav-btn btn-next" onclick="moveSlide(1)">❯</button>
 
-    <div class="main-content">
-        <div class="search-bar">
-            <input type="text" id="searchInput" placeholder="Rechercher ou scanner..." oninput="filterProducts()">
-        </div>
-        <div class="products-container" id="productGrid"></div>
-    </div>
+    <div class="gallery-wrapper" id="galleryArea"></div>
+</div>
 
-    <div class="cart-panel">
-        <div class="cart-header" style="padding:25px; border-bottom:1px solid var(--border); background:#f8fafc;">
-            <div style="font-weight:800; font-size: 1.1em;"><i class="fas fa-shopping-cart"></i> PANIER</div>
-        </div>
-        <div class="cart-list" id="cartList"></div>
-        <div class="checkout-box">
-            <div class="total-row"><span>TOTAL</span><span id="totalPrice">0 F</span></div>
-            <button class="btn-checkout" onclick="checkout()">VALIDER LA VENTE</button>
-        </div>
-    </div>
+<script>
+    const firebaseConfig = { databaseURL: "https://presentation-c55d7-default-rtdb.firebaseio.com/" };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-    <script>
-        const DB_URL = "https://djami-e16ab-default-rtdb.firebaseio.com/";
-        let products = [], cart = [], currentUser = "Inconnu";
-        const catcher = document.getElementById('barcode-catcher');
+    const wrapper = document.getElementById('galleryArea');
+    let currentFilter = 'TOUT';
+    let allPhotosData = [];
 
-        async function fbGet(path) {
-            const res = await fetch(`${DB_URL}${path}.json`);
-            return await res.json();
+    // MISE À JOUR EN TEMPS RÉEL (Toujours actif)
+    db.ref('galeriePhotos').on('value', (snapshot) => {
+        const data = snapshot.val();
+        allPhotosData = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
+        console.log("Données reçues de Firebase, mise à jour de l'affichage...");
+        displayGallery();
+    });
+
+    function displayGallery() {
+        const filtered = currentFilter === 'TOUT' 
+            ? allPhotosData 
+            : allPhotosData.filter(p => p.categorie === currentFilter);
+
+        if (filtered.length === 0) {
+            wrapper.innerHTML = `<div style="color:#444; width:100%; text-align:center; margin-top:45vh;">Aucun contenu</div>`;
+            return;
         }
 
-        function focusScanner() { if (document.activeElement.tagName !== 'INPUT') catcher.focus(); }
-        setInterval(focusScanner, 500);
+        // On vide et on reconstruit pour forcer l'actualisation visuelle
+        wrapper.innerHTML = '';
+        const html = filtered.reverse().map(p => `
+            <div class="photo-slide" onclick="toggleUI()">
+                <img src="${p.src}" alt="photo">
+                <div class="overlay-info">
+                    <div style="font-size:0.6rem; text-transform:uppercase; color:#6c5ce7; font-weight:bold; margin-bottom:5px;">${p.categorie}</div>
+                    <div class="photo-title">${p.titre}</div>
+                    <div class="photo-date">Ajoutée le ${p.date}</div>
+                </div>
+            </div>
+        `).join('');
+        wrapper.innerHTML = html;
+    }
 
-        catcher.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') { addToCart(catcher.value); catcher.value = ''; }
-        });
+    function filterGallery(cat, btn) {
+        currentFilter = cat;
+        document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        displayGallery();
+        wrapper.scrollLeft = 0;
+    }
 
-        async function attemptLogin() {
-            const usersObj = await fbGet('users') || {};
-            const users = Object.values(usersObj);
-            const name = document.getElementById('uNameInput').value;
-            const pass = document.getElementById('uPassInput').value;
-            const user = users.find(u => u.name === name && u.pass === pass);
-            if (user) {
-                currentUser = user.name;
-                document.getElementById('loginOverlay').style.display = 'none';
-                document.getElementById('userDisplay').innerHTML = `<i class="fas fa-check-circle"></i> ${currentUser}`;
-                loadData();
-            } else { alert("Erreur de connexion."); }
-        }
+    function moveSlide(direction) {
+        wrapper.scrollBy({ left: direction * wrapper.clientWidth, behavior: 'smooth' });
+    }
 
-        async function loadData() {
-            const productsObj = await fbGet('products') || {};
-            products = Object.keys(productsObj).map(key => ({...productsObj[key], id: key}));
-            renderProducts();
-            renderSellerHistory();
-        }
-
-        function renderProducts(data = products) {
-            document.getElementById('productGrid').innerHTML = data.map(p => {
-                const stockVal = parseInt(p.stock) || 0;
-                return `
-                <div class="p-card" onclick="${stockVal > 0 ? `addToCart('${p.barcode}')` : ''}" style="${stockVal <= 0 ? 'opacity: 0.6; cursor: not-allowed;' : ''}">
-                    <div class="stock-tag" style="background:${stockVal > 0 ? '#22c55e' : '#ef4444'}; color:white;">${stockVal > 0 ? stockVal + ' en stock' : 'RUPTURE'}</div>
-                    <div class="p-img"><img src="${p.img || ''}"></div>
-                    <div class="p-name">${p.name}</div>
-                    <div class="p-price">${parseInt(p.price).toLocaleString()} F</div>
-                </div>`;
-            }).join('');
-        }
-
-        function filterProducts() {
-            const val = document.getElementById('searchInput').value.toLowerCase();
-            renderProducts(products.filter(p => p.name.toLowerCase().includes(val) || p.barcode.includes(val)));
-        }
-
-        function addToCart(barcode) {
-            const p = products.find(prod => prod.barcode === barcode);
-            if(!p || parseInt(p.stock) <= 0) return;
-            const existing = cart.find(item => item.barcode === barcode);
-            if (existing) { if(existing.qty < p.stock) existing.qty++; } 
-            else { cart.push({...p, qty: 1}); }
-            updateCart();
-        }
-
-        function updateCart() {
-            let total = 0;
-            document.getElementById('cartList').innerHTML = cart.map((item, i) => {
-                total += item.price * item.qty;
-                return `<div class="cart-item">
-                    <img src="${item.img || ''}">
-                    <div style="flex:1;">
-                        <div style="font-weight:700; font-size:0.9em;">${item.name}</div>
-                        <div style="color:var(--sidebar-active); font-weight:800;">${item.qty} x ${item.price} F</div>
-                    </div>
-                    <div onclick="cart.splice(${i},1); updateCart()" style="color:var(--danger); cursor:pointer; padding:5px;"><i class="fas fa-trash"></i></div>
-                </div>`;
-            }).join('');
-            document.getElementById('totalPrice').innerText = total.toLocaleString() + " F";
-        }
-
-        async function renderSellerHistory() {
-            const historyObj = await fbGet('salesHistory') || {};
-            const history = Object.values(historyObj);
-            const today = new Date().toLocaleDateString('fr-FR');
-            const mySales = history.filter(s => s.user === currentUser && s.date === today).reverse();
-            document.getElementById('sellerHistory').innerHTML = mySales.map((s, index) => `
-                <div class="history-row">
-                    <div><div style="color:white; font-weight:600;">${s.total.toLocaleString()} F</div><div style="font-size:0.85em; color:#64748b;">${s.time}</div></div>
-                    <span class="cart-link">Détails<div class="tooltip" style="top: ${180 + (index * 55)}px;">
-                        ${s.items.map(it => `<div style="display:flex;gap:10px;margin-bottom:5px;"><img src="${it.img}" style="width:30px;height:30px;"><b>${it.name}</b> (x${it.qty})</div>`).join('')}
-                    </div></span>
-                </div>`).join('');
-        }
-
-        async function checkout() {
-            if (cart.length === 0) return;
-            for(let item of cart) {
-                const p = products.find(prod => prod.id === item.id);
-                await fetch(`${DB_URL}products/${p.id}/stock.json`, { method: 'PUT', body: (p.stock - item.qty) });
-            }
-            const now = new Date();
-            await fetch(`${DB_URL}salesHistory.json`, { method: 'POST', body: JSON.stringify({
-                user: currentUser,
-                date: now.toLocaleDateString('fr-FR'),
-                time: now.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}),
-                total: cart.reduce((s, i) => s + (i.price * i.qty), 0),
-                items: cart.map(c => ({ name: c.name, qty: c.qty, img: c.img, price: c.price }))
-            })});
-            cart = []; updateCart(); loadData(); alert("Vente validée !");
-        }
-    </script>
+    function toggleUI() {
+        document.getElementById('mainFrame').classList.toggle('hide-ui');
+    }
+</script>
 </body>
 </html>
