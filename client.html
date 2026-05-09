@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Boutique Client</title>
+    <title>Boutique Client - Connexion</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -11,43 +11,51 @@
         body { background: #1a1a1a; font-family: 'Poppins', sans-serif; display: flex; justify-content: center; overflow: hidden; color: white; }
         .iphone-container { width: 100%; max-width: 414px; background: #000; height: 100vh; position: relative; overflow: hidden; display: flex; flex-direction: column; }
         
-        /* Navigation Haute */
+        /* Auth Screen */
+        #auth-screen { position: absolute; inset: 0; background: #111; z-index: 500; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; }
+        .auth-card { width: 100%; text-align: center; }
+        input { width: 100%; padding: 15px; margin: 10px 0; border-radius: 12px; border: 1px solid #333; background: #222; color: white; font-size: 1rem; }
+        .btn-auth { width: 100%; padding: 15px; border-radius: 12px; border: none; background: #6c5ce7; color: white; font-weight: 600; cursor: pointer; margin-top: 10px; }
+        
+        /* Nav & Layout */
         .top-nav { padding: 50px 20px 10px; display: flex; justify-content: space-between; align-items: center; z-index: 100; background: rgba(0,0,0,0.8); }
-        .btn-cart { background: #6c5ce7; border: none; color: white; padding: 10px; border-radius: 50%; width: 45px; height: 45px; cursor: pointer; position: relative; }
-        #cart-count { position: absolute; top: -5px; right: -5px; background: red; font-size: 0.7rem; border-radius: 50%; padding: 2px 6px; }
-
-        /* Galerie de Produits (Swipe Vertical) */
-        .product-list { flex: 1; overflow-y: auto; padding: 10px; scrollbar-width: none; }
+        .product-list { flex: 1; overflow-y: auto; padding: 15px; }
         .product-card { background: #222; border-radius: 20px; margin-bottom: 15px; padding: 15px; display: flex; align-items: center; gap: 15px; border: 1px solid #333; }
-        .product-card img { width: 80px; height: 80px; border-radius: 12px; object-fit: cover; }
-        .product-info { flex: 1; }
-        .btn-add { background: #6c5ce7; border: none; color: white; padding: 8px 15px; border-radius: 15px; font-size: 0.8rem; cursor: pointer; margin-top: 5px; }
-
-        /* Panier & Commandes (Overlay) */
+        .product-card img { width: 70px; height: 70px; border-radius: 12px; object-fit: cover; }
+        
+        /* Overlays */
         .overlay { position: absolute; inset: 0; background: #111; z-index: 200; transform: translateY(100%); transition: 0.4s ease; padding: 60px 20px; overflow-y: auto; }
         .overlay.active { transform: translateY(0); }
         .close-overlay { position: absolute; top: 20px; right: 20px; color: white; font-size: 1.5rem; cursor: pointer; }
         
-        .order-item { background: #222; padding: 10px; border-radius: 15px; margin-bottom: 10px; }
-        .order-products-imgs { display: flex; gap: 5px; margin-top: 10px; flex-wrap: wrap; }
-        .order-products-imgs img { width: 40px; height: 40px; border-radius: 5px; border: 1px solid #444; }
-        
-        .status { font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; float: right; }
-        .status-en_cours { background: orange; }
-        .status-livre { background: green; }
+        .order-item { background: #222; padding: 15px; border-radius: 15px; margin-bottom: 10px; border-left: 4px solid #6c5ce7; }
+        .order-imgs { display: flex; gap: 5px; margin-top: 8px; }
+        .order-imgs img { width: 35px; height: 35px; border-radius: 5px; border: 1px solid #444; }
+        .status { font-size: 0.7rem; padding: 3px 8px; border-radius: 10px; float: right; background: #6c5ce7; }
     </style>
 </head>
 <body>
 
 <div class="iphone-container">
+    <div id="auth-screen">
+        <div class="auth-card">
+            <h2 style="margin-bottom:20px; color:#6c5ce7">STYL COSMETIC</h2>
+            <div id="auth-title">Connexion / Inscription</div>
+            <input type="tel" id="userPhone" placeholder="Numéro de téléphone">
+            <input type="password" id="userPass" placeholder="Mot de passe">
+            <button class="btn-auth" onclick="handleAuth()">ACCÉDER À LA BOUTIQUE</button>
+        </div>
+    </div>
+
     <div class="top-nav">
-        <h2>Produits</h2>
-        <div>
-            <button class="btn-cart" onclick="toggleOverlay('orders-overlay')"><i class="fas fa-box"></i></button>
-            <button class="btn-cart" onclick="toggleOverlay('cart-overlay')">
-                <i class="fas fa-shopping-basket"></i>
-                <span id="cart-count">0</span>
+        <div><small id="welcomeUser"></small><h3>Boutique</h3></div>
+        <div style="display:flex; gap:10px">
+            <button onclick="toggleOverlay('orders-overlay')" style="background:none; border:none; color:white; font-size:1.2rem;"><i class="fas fa-history"></i></button>
+            <button onclick="toggleOverlay('cart-overlay')" style="background:none; border:none; color:white; font-size:1.2rem; position:relative;">
+                <i class="fas fa-shopping-cart"></i>
+                <span id="cart-count" style="position:absolute; top:-8px; right:-8px; background:red; font-size:0.6rem; border-radius:50%; padding:2px 5px;">0</span>
             </button>
+            <button onclick="location.reload()" style="background:none; border:none; color:#ff4757;"><i class="fas fa-power-off"></i></button>
         </div>
     </div>
 
@@ -55,37 +63,61 @@
 
     <div id="cart-overlay" class="overlay">
         <span class="close-overlay" onclick="toggleOverlay('cart-overlay')">✖</span>
-        <h3>Votre Panier</h3>
-        <div id="cartContent" style="margin-top:20px;"></div>
-        <button class="btn-add" style="width:100%; margin-top:20px; padding:15px;" onclick="placeOrder()">COMMANDER MAINTENANT</button>
+        <h3>Mon Panier</h3>
+        <div id="cartContent" style="margin-top:20px"></div>
+        <button class="btn-auth" id="btnOrder" style="margin-top:20px" onclick="placeOrder()">CONFIRMER LA COMMANDE</button>
     </div>
 
     <div id="orders-overlay" class="overlay">
         <span class="close-overlay" onclick="toggleOverlay('orders-overlay')">✖</span>
         <h3>Mes Commandes</h3>
-        <div id="myOrdersContent" style="margin-top:20px;"></div>
+        <div id="myOrdersContent" style="margin-top:20px"></div>
     </div>
 </div>
 
 <script>
     const DB_URL = "https://djami-e16ab-default-rtdb.firebaseio.com/";
+    let currentClient = null;
     let cart = [];
 
-    async function loadData() {
+    async function handleAuth() {
+        const phone = document.getElementById('userPhone').value;
+        const pass = document.getElementById('userPass').value;
+        if(!phone || !pass) return alert("Remplissez tout");
+
+        const res = await fetch(`${DB_URL}clients/${phone}.json`);
+        const client = await res.json();
+
+        if(!client) {
+            if(confirm("Compte inexistant. Créer un compte ?")) {
+                await fetch(`${DB_URL}clients/${phone}.json`, { method: 'PUT', body: JSON.stringify({ pass }) });
+                loginSuccess(phone);
+            }
+        } else if(client.pass === pass) {
+            loginSuccess(phone);
+        } else { alert("Mot de passe incorrect"); }
+    }
+
+    function loginSuccess(phone) {
+        currentClient = phone;
+        document.getElementById('auth-screen').style.display = 'none';
+        document.getElementById('welcomeUser').innerText = "Client: " + phone;
+        loadProducts();
+        loadMyOrders();
+    }
+
+    async function loadProducts() {
         const res = await fetch(`${DB_URL}products.json`);
         const products = await res.json() || {};
-        const list = document.getElementById('productList');
-        list.innerHTML = Object.keys(products).map(id => `
+        document.getElementById('productList').innerHTML = Object.keys(products).map(id => `
             <div class="product-card">
-                <img src="${products[id].img}" alt="">
-                <div class="product-info">
+                <img src="${products[id].img}">
+                <div style="flex:1">
                     <div style="font-weight:600">${products[id].name}</div>
                     <div style="color:#6c5ce7">${products[id].price} F</div>
-                    <button class="btn-add" onclick="addToCart('${id}', '${products[id].name}', '${products[id].price}', '${products[id].img}')">Ajouter</button>
+                    <button class="btn-auth" style="padding:5px 10px; font-size:0.7rem; width:auto" onclick="addToCart('${id}', '${products[id].name}', '${products[id].price}', '${products[id].img}')">Ajouter</button>
                 </div>
-            </div>
-        `).join('');
-        loadOrders();
+            </div>`).join('');
     }
 
     function addToCart(id, name, price, img) {
@@ -95,22 +127,18 @@
     }
 
     function updateCartUI() {
-        const cont = document.getElementById('cartContent');
-        cont.innerHTML = cart.map((item, i) => `
-            <div class="product-card" style="margin-bottom:10px">
-                <img src="${item.img}" style="width:50px; height:50px">
-                <div class="product-info">
-                    <div>${item.name}</div>
-                    <div style="font-size:0.8rem">${item.price} F</div>
-                </div>
-                <i class="fas fa-trash" onclick="cart.splice(${i},1); updateCartUI();" style="color:red"></i>
-            </div>
-        `).join('');
+        document.getElementById('cartContent').innerHTML = cart.map((item, i) => `
+            <div class="product-card">
+                <img src="${item.img}" style="width:40px; height:40px">
+                <div style="flex:1; font-size:0.8rem">${item.name}</div>
+                <i class="fas fa-trash" onclick="cart.splice(${i},1); updateCartUI()" style="color:red"></i>
+            </div>`).join('');
     }
 
     async function placeOrder() {
         if(cart.length === 0) return;
         const order = {
+            clientPhone: currentClient,
             date: new Date().toLocaleString(),
             items: cart,
             status: "en_cours",
@@ -119,28 +147,24 @@
         await fetch(`${DB_URL}orders.json`, { method: 'POST', body: JSON.stringify(order) });
         cart = []; document.getElementById('cart-count').innerText = 0;
         toggleOverlay('cart-overlay');
-        alert("Commande envoyée !");
-        loadOrders();
+        alert("Commande enregistrée !");
+        loadMyOrders();
     }
 
-    async function loadOrders() {
+    async function loadMyOrders() {
         const res = await fetch(`${DB_URL}orders.json`);
         const orders = await res.json() || {};
-        document.getElementById('myOrdersContent').innerHTML = Object.keys(orders).reverse().map(id => `
+        const myOrders = Object.values(orders).filter(o => o.clientPhone === currentClient).reverse();
+        document.getElementById('myOrdersContent').innerHTML = myOrders.map(o => `
             <div class="order-item">
-                <span class="status status-${orders[id].status}">${orders[id].status}</span>
-                <div style="font-size:0.8rem; color:#aaa">${orders[id].date}</div>
-                <div style="font-weight:600">Total: ${orders[id].total} F</div>
-                <div class="order-products-imgs">
-                    ${orders[id].items.map(it => `<img src="${it.img}">`).join('')}
-                </div>
-            </div>
-        `).join('');
+                <span class="status">${o.status}</span>
+                <div style="font-size:0.7rem; color:#aaa">${o.date}</div>
+                <div style="font-weight:600">${o.total} F</div>
+                <div class="order-imgs">${o.items.map(it => `<img src="${it.img}">`).join('')}</div>
+            </div>`).join('');
     }
 
     function toggleOverlay(id) { document.getElementById(id).classList.toggle('active'); }
-    
-    window.onload = loadData;
 </script>
 </body>
 </html>
