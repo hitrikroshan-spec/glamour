@@ -4,30 +4,118 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Livreur - Glamour Market</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Livreur GM">
+    <link rel="apple-touch-icon" href="logo.png">
+    <link rel="manifest" href="manifest.json">
+
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #000; font-family: 'Poppins', sans-serif; display: flex; justify-content: center; color: white; }
-        .iphone-container { width: 100%; max-width: 414px; background: #111; height: 100vh; display: flex; flex-direction: column; padding: 50px 20px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            background: #000; 
+            font-family: 'Poppins', sans-serif; 
+            display: flex; 
+            justify-content: center; 
+            color: white;
+            overflow: hidden; /* Empêche le rebond du navigateur */
+            height: 100vh;
+            width: 100vw;
+            position: fixed;
+        }
+
+        .iphone-container { 
+            width: 100%; 
+            max-width: 414px; 
+            background: #111; 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            padding: 60px 20px 20px 20px; /* Padding haut pour la barre d'état iPhone */
+        }
         
         .header { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; }
-        .header img { width: 50px; }
+        .header img { width: 50px; height: 50px; border-radius: 10px; object-fit: cover; }
 
-        #searchBox { width: 100%; padding: 15px; border-radius: 15px; border: 1px solid #333; background: #222; color: #d4a373; font-weight: 600; margin-bottom: 20px; outline: none; }
+        #searchBox { 
+            width: 100%; 
+            padding: 15px; 
+            border-radius: 15px; 
+            border: 1px solid #333; 
+            background: #222; 
+            color: #d4a373; 
+            font-weight: 600; 
+            margin-bottom: 20px; 
+            outline: none; 
+            font-size: 1rem;
+        }
         
-        .order-card { background: #1a1a1a; border-radius: 20px; padding: 15px; margin-bottom: 15px; border: 1px solid #222; }
+        /* Liste de commandes */
+        #deliveryList { 
+            flex: 1; 
+            overflow-y: auto; 
+            padding-bottom: 20px;
+            scrollbar-width: none; /* Firefox */
+        }
+        #deliveryList::-webkit-scrollbar { display: none; } /* Chrome/Safari */
+
+        .order-card { 
+            background: #1a1a1a; 
+            border-radius: 20px; 
+            padding: 15px; 
+            margin-bottom: 15px; 
+            border: 1px solid #222; 
+            transition: transform 0.2s;
+        }
+        
         .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
-        .phone-tag { background: #d4a373; color: black; padding: 3px 10px; border-radius: 10px; font-size: 0.8rem; font-weight: bold; }
+        .phone-tag { background: #d4a373; color: black; padding: 4px 12px; border-radius: 10px; font-size: 0.85rem; font-weight: bold; }
         
-        .item-scroll { display: flex; gap: 8px; overflow-x: auto; padding: 10px 0; }
-        .item-scroll img { width: 55px; height: 55px; border-radius: 10px; border: 1px solid #d4a373; object-fit: cover; }
+        .item-scroll { 
+            display: flex; 
+            gap: 10px; 
+            overflow-x: auto; 
+            padding: 10px 0; 
+            scrollbar-width: none;
+        }
+        .item-scroll::-webkit-scrollbar { display: none; }
+        
+        .item-scroll img { 
+            width: 60px; 
+            height: 60px; 
+            border-radius: 12px; 
+            border: 1px solid #333; 
+            object-fit: cover; 
+            background: #222;
+        }
         
         .actions { display: flex; gap: 10px; margin-top: 15px; }
-        .btn { flex: 1; padding: 12px; border-radius: 12px; border: none; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-status { background: #2ecc71; color: white; }
-        .btn-delete { background: #e63946; color: white; flex: 0 0 50px; }
-        .is-done { opacity: 0.4; }
+        .btn { 
+            height: 50px;
+            border-radius: 15px; 
+            border: none; 
+            font-weight: 600; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 8px; 
+            font-size: 0.9rem;
+        }
+        
+        .btn-status { background: #2ecc71; color: white; flex: 1; }
+        .btn-delete { background: #e63946; color: white; width: 55px; font-size: 1.1rem; }
+        
+        .is-done { opacity: 0.5; border-color: #2ecc71; }
+        .is-done .btn-status { background: #333; color: #777; cursor: default; }
+
+        /* Animation au clic */
+        .btn:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
@@ -36,55 +124,76 @@
     <div class="header">
         <img src="logo.png" onerror="this.src='https://via.placeholder.com/50?text=GM'">
         <div>
-            <h2 style="font-size:1.1rem; line-height:1;">GLAMOUR MARKET</h2>
-            <small style="color:#d4a373">Gestion Livraisons</small>
+            <h2 style="font-size:1.2rem; line-height:1; letter-spacing: 1px;">GLAMOUR MARKET</h2>
+            <small style="color:#d4a373; text-transform: uppercase; font-weight: bold;">Espace Livraison</small>
         </div>
     </div>
     
-    <input type="tel" id="searchBox" placeholder="Rechercher un téléphone..." oninput="renderDeliveries()">
+    <input type="tel" id="searchBox" placeholder="Rechercher par téléphone..." oninput="renderDeliveries()">
 
-    <div id="deliveryList" style="flex:1; overflow-y:auto; scrollbar-width:none;"></div>
+    <div id="deliveryList">
+        </div>
 </div>
 
 <script>
+    // URL de votre base de données Firebase
     const DB_URL = "https://djami-e16ab-default-rtdb.firebaseio.com/";
     let allOrders = {};
 
+    // Charger les données depuis Firebase
     async function loadData() {
-        const res = await fetch(`${DB_URL}orders.json`);
-        allOrders = await res.json() || {};
-        renderDeliveries();
+        try {
+            const res = await fetch(`${DB_URL}orders.json`);
+            allOrders = await res.json() || {};
+            renderDeliveries();
+        } catch (error) {
+            console.error("Erreur de chargement:", error);
+        }
     }
 
+    // Afficher la liste des commandes avec filtre
     function renderDeliveries() {
         const filter = document.getElementById('searchBox').value;
         const list = document.getElementById('deliveryList');
         
-        const filteredIds = Object.keys(allOrders).reverse().filter(id => 
+        // Trier les IDs par ordre inverse (plus récent en haut)
+        const sortedIds = Object.keys(allOrders).reverse();
+
+        // Filtrage par numéro de téléphone
+        const filteredIds = sortedIds.filter(id => 
             !filter || allOrders[id].phone.includes(filter)
         );
+
+        if (filteredIds.length === 0) {
+            list.innerHTML = `<div style="text-align:center; color:#444; margin-top:50px;">Aucune commande trouvée</div>`;
+            return;
+        }
 
         list.innerHTML = filteredIds.map(id => {
             const o = allOrders[id];
             const isLivre = o.status === 'livre';
+            
             return `
                 <div class="order-card ${isLivre ? 'is-done' : ''}">
                     <div class="card-top">
                         <div>
                             <span class="phone-tag"><i class="fas fa-phone"></i> ${o.phone}</span>
-                            <div style="font-size:0.6rem; color:#666; mt-5">${o.date}</div>
+                            <div style="font-size:0.65rem; color:#888; margin-top:5px;"><i class="far fa-clock"></i> ${o.date}</div>
                         </div>
-                        <div style="font-weight:bold; color:#d4a373">${o.total} F</div>
+                        <div style="font-weight:600; color:#d4a373; font-size:1.1rem;">${o.total} F</div>
                     </div>
 
                     <div class="item-scroll">
-                        ${o.items.map(it => `<img src="${it.img}" title="${it.name}">`).join('')}
+                        ${o.items.map(it => `
+                            <img src="${it.img}" alt="${it.name}" onerror="this.src='https://via.placeholder.com/60?text=Item'">
+                        `).join('')}
                     </div>
 
                     <div class="actions">
                         <button class="btn btn-status" onclick="updateStatus('${id}')" ${isLivre ? 'disabled' : ''}>
-                            ${isLivre ? '<i class="fas fa-check"></i> LIVRÉ' : '<i class="fas fa-truck"></i> LIVRER'}
+                            ${isLivre ? '<i class="fas fa-check-circle"></i> LIVRÉ' : '<i class="fas fa-truck"></i> MARQUER LIVRÉ'}
                         </button>
+                        
                         <button class="btn btn-delete" onclick="deleteOrder('${id}')">
                             <i class="fas fa-trash-alt"></i>
                         </button>
@@ -94,22 +203,39 @@
         }).join('');
     }
 
+    // Mettre à jour le statut en "LIVRÉ"
     async function updateStatus(id) {
-        if(confirm("Confirmer la livraison ?")) {
-            await fetch(`${DB_URL}orders/${id}/status.json`, { method: 'PUT', body: JSON.stringify("livre") });
-            loadData();
+        if(confirm("Voulez-vous marquer cette commande comme livrée ?")) {
+            try {
+                await fetch(`${DB_URL}orders/${id}/status.json`, { 
+                    method: 'PUT', 
+                    body: JSON.stringify("livre") 
+                });
+                loadData();
+            } catch (error) {
+                alert("Erreur lors de la mise à jour.");
+            }
         }
     }
 
+    // Supprimer une commande de l'historique
     async function deleteOrder(id) {
         if(confirm("Supprimer définitivement cette commande de l'historique ?")) {
-            await fetch(`${DB_URL}orders/${id}.json`, { method: 'DELETE' });
-            loadData();
+            try {
+                await fetch(`${DB_URL}orders/${id}.json`, { method: 'DELETE' });
+                loadData(); // Rafraîchir la liste
+            } catch (error) {
+                alert("Erreur lors de la suppression.");
+            }
         }
     }
 
+    // Initialisation
     window.onload = loadData;
-    setInterval(loadData, 10000); // Rafraîchissement auto
+
+    // Rafraîchissement automatique toutes les 15 secondes pour les nouvelles commandes
+    setInterval(loadData, 15000);
 </script>
+
 </body>
 </html>
