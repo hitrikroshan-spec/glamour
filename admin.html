@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin - STYL COSMETIC</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Palette Glamour & Féminine */
+        :root { 
+            --primary: #d4a373; 
+            --accent: #e07a5f; 
+            --pink-soft: #f4f1de; 
+            --pink-dark: #3d405b; 
+            --white: #ffffff;
+            --danger: #e63946;
+            --success: #81b29a;
+            --glass: rgba(255, 255, 255, 0.8);
+        }
+        
+        body { 
+            font-family: 'Poppins', 'Segoe UI', sans-serif; 
+            background: linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%);
+            margin: 0; 
+            display: flex; 
+            flex-direction: column;
+            height: 100vh; 
+            color: var(--pink-dark); 
+            overflow: hidden;
+        }
+
+        .logo-main { width: 120px; height: auto; margin-bottom: 10px; }
+
+        #login-screen {
+            position: fixed; inset: 0; background: linear-gradient(135deg, #3d405b 0%, #d4a373 100%);
+            z-index: 10001; display: flex; align-items: center; justify-content: center;
+        }
+        .login-card {
+            background: white; padding: 40px; border-radius: 30px; width: 320px; text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        }
+        .login-card input { margin-bottom: 15px; border: 1px solid #ddd; }
+        
+        #admin-content { display: none; height: 100%; width: 100%; flex-direction: column; }
+        
+        .sidebar { 
+            position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%);
+            width: auto; background: rgba(61, 64, 91, 0.95); backdrop-filter: blur(15px);
+            padding: 10px 25px; display: flex; gap: 15px; border-radius: 50px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2); z-index: 9999; border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .nav-item { 
+            padding: 8px 12px; border-radius: 25px; cursor: pointer; 
+            display: flex; flex-direction: column; align-items: center; 
+            gap: 4px; color: #bdc3c7; transition: all 0.3s ease; 
+            font-weight: 500; font-size: 0.7rem; min-width: 65px;
+        }
+
+        .nav-item i { font-size: 1.1rem; }
+        .nav-item:hover { color: var(--white); transform: translateY(-3px); }
+        .nav-item.active { background: var(--primary); color: white; box-shadow: 0 5px 15px rgba(212, 163, 115, 0.4); }
+        
+        .main { flex: 1; overflow-y: auto; padding: 40px 20px 120px 20px; }
+        .header-title { margin-bottom: 40px; text-align: center; }
+        .header-title h1 { font-family: 'Playfair Display', serif; font-size: 2.5em; color: var(--pink-dark); letter-spacing: 2px; text-transform: uppercase; margin: 0; }
+
+        .section { display: none; animation: fadeIn 0.5s ease; max-width: 1100px; margin: 0 auto; }
+        .section.active { display: block; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .card { background: var(--glass); border-radius: 24px; border: 1px solid rgba(255,255,255,0.5); padding: 30px; margin-bottom: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); }
+        
+        /* Pagination */
+        .pagination-container { display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 20px; }
+        .page-btn { background: var(--white); border: 1px solid var(--primary); color: var(--primary); padding: 5px 12px; border-radius: 8px; cursor: pointer; transition: 0.3s; font-weight: 600; }
+        .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        .page-btn:hover:not(:disabled) { background: var(--primary); color: white; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 25px; }
+        .stat-card { background: var(--white); padding: 25px; border-radius: 20px; border-bottom: 4px solid var(--primary); text-align: center; }
+        .stat-val { font-size: 2em; font-weight: 700; color: var(--pink-dark); }
+        .stat-label { color: var(--accent); font-size: 0.8em; text-transform: uppercase; letter-spacing: 1px; }
+
+        table { width: 100%; border-collapse: separate; border-spacing: 0 10px; }
+        th { padding: 15px; color: var(--accent); text-transform: uppercase; font-size: 0.75em; letter-spacing: 1px; border: none; }
+        td { background: var(--white); padding: 15px; border: none; }
+        td:first-child { border-radius: 15px 0 0 15px; }
+        td:last-child { border-radius: 0 15px 15px 0; }
+        
+        .img-thumb { width: 55px; height: 55px; border-radius: 12px; border: 2px solid var(--pink-soft); object-fit: cover; }
+        
+        .cart-link { color: var(--primary); font-weight: 600; cursor: pointer; border-bottom: 1px dashed var(--primary); position: relative; }
+        .tooltip { 
+            visibility: hidden; width: 280px; background: white; border-radius: 15px; padding: 15px; 
+            position: absolute; z-index: 100; bottom: 125%; left: 50%; transform: translateX(-50%);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15); border: 1px solid var(--pink-soft); opacity: 0; transition: 0.3s; pointer-events: none;
+        }
+        .cart-link:hover .tooltip { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(-5px); }
+        .tooltip-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--pink-soft); }
+
+        .btn { padding: 12px 25px; border-radius: 50px; border: none; cursor: pointer; font-weight: 600; transition: 0.3s; display: inline-flex; align-items: center; gap: 10px; text-transform: uppercase; font-size: 0.8em; }
+        .btn-primary { background: var(--pink-dark); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-success { background: var(--success); color: white; }
+
+        input, select { padding: 14px; border: 1.5px solid #eee; border-radius: 15px; background: #fff; transition: 0.3s; width: 100%; box-sizing: border-box; }
+        input:focus { outline: none; border-color: var(--primary); }
+
+        .stock-item { background: white; border-radius: 20px; padding: 20px; transition: 0.4s; border: 1px solid transparent; cursor: pointer; text-align: center; }
+        .stock-item:hover { border-color: var(--primary); transform: translateY(-5px); }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen">
+        <div class="login-card">
+            <img src="logo.png" class="logo-main" alt="Logo">
+            <h2>ADMINISTRATION</h2>
+            <input type="text" id="adminUser" placeholder="Utilisateur">
+            <input type="password" id="adminPass" placeholder="Mot de passe">
+            <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="checkLogin()">SE CONNECTER</button>
+            <p id="loginError" style="color: var(--danger); font-size: 0.8rem; margin-top: 10px; display: none;">Identifiants incorrects</p>
+        </div>
+    </div>
+
+    <div id="admin-content">
+        <div class="main">
+            <div class="header-title"><h1>GLAMOUR MARKET</h1></div>
+
+            <div id="inventory" class="section active">
+                <div class="card">
+                    <h3 style="margin-top:0; font-family:'Playfair Display'">Nouveau Produit</h3>
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:15px;">
+                        <input type="text" id="pName" placeholder="Nom du produit">
+                        <input type="number" id="pPrice" placeholder="Prix (F)">
+                        <input type="number" id="pStock" value="0">
+                        <input type="text" id="pBarcode" placeholder="Code-barres">
+                        <input type="file" id="pImage" accept="image/*" onchange="encodeImage(this)">
+                    </div>
+                    <button class="btn btn-primary" style="margin-top:20px; width:100%; justify-content:center;" onclick="addProduct()"><i class="fas fa-magic"></i> AJOUTER</button>
+                </div>
+                <div class="card">
+                    <table>
+                        <thead><tr><th>Image</th><th>Désignation</th><th>Prix</th><th>Stock</th><th>Action</th></tr></thead>
+                        <tbody id="productTable"></tbody>
+                    </table>
+                    <div id="pagination-inventory" class="pagination-container"></div>
+                </div>
+            </div>
+
+            <div id="stock" class="section">
+                <div class="header-title"><h2>Réapprovisionnement</h2></div>
+                <div class="card">
+                    <div id="stockGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px;"></div>
+                    <div id="pagination-stock" class="pagination-container"></div>
+                </div>
+            </div>
+
+            <div id="stockHist" class="section">
+                <div class="header-title" style="display:flex; justify-content:space-between; align-items:center;">
+                    <h2>Entrées Stock</h2>
+                    <button class="btn btn-danger" onclick="clearStockHistory()"><i class="fas fa-trash-alt"></i></button>
+                </div>
+                <div class="card">
+                    <table>
+                        <thead><tr><th>Image</th><th>Date</th><th>Produit</th><th>Initial</th><th>Ajout</th><th>Final</th></tr></thead>
+                        <tbody id="stockHistTable"></tbody>
+                    </table>
+                    <div id="pagination-stockHist" class="pagination-container"></div>
+                </div>
+            </div>
+
+            <div id="users" class="section">
+                <div class="header-title"><h2>Équipe</h2></div>
+                <div class="card">
+                    <div style="display:flex; gap:15px;">
+                        <input type="text" id="uName" placeholder="Nom">
+                        <input type="password" id="uPass" placeholder="Code">
+                        <button class="btn btn-primary" onclick="addUser()">AJOUTER</button>
+                    </div>
+                </div>
+                <div class="card"><table id="userTable"></table></div>
+
+                <div class="card">
+                    <h3 style="margin-top:0; font-family:'Playfair Display'">Modifier Accès Admin</h3>
+                    <div style="display:flex; gap:15px;">
+                        <input type="text" id="newAdminUser" placeholder="Nouveau Nom Admin">
+                        <input type="password" id="newAdminPass" placeholder="Nouveau Mot de passe">
+                    </div>
+                    <button class="btn btn-primary" style="margin-top:20px;" onclick="updateAdminAccess()">METTRE À JOUR</button>
+                </div>
+            </div>
+
+            <div id="sales" class="section">
+                <div class="header-title" style="display:flex; justify-content:space-between; align-items:center;">
+                    <h2>Journal des Ventes</h2>
+                    <button class="btn btn-danger" onclick="clearSalesHistory()"><i class="fas fa-trash-alt"></i></button>
+                </div>
+                <div class="card">
+                    <table>
+                        <thead><tr><th>Date</th><th>Vendeuse</th><th>Contenu</th><th>Total</th></tr></thead>
+                        <tbody id="salesTable"></tbody>
+                    </table>
+                    <div id="pagination-sales" class="pagination-container"></div>
+                </div>
+            </div>
+
+            <div id="bilan" class="section">
+                <div class="header-title"><h2>Bilan Financier</h2></div>
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-label">Recette</div><div class="stat-val" id="bilanTotal">0 F</div></div>
+                    <div class="stat-card"><div class="stat-label">Ventes</div><div class="stat-val" id="bilanCount">0</div></div>
+                </div>
+                <div class="card" style="margin-top:20px;">
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:10px; margin-bottom:20px;">
+                        <select id="filterVendeur" onchange="generateBilan()"></select>
+                        <input type="date" id="filterDate" onchange="generateBilan()">
+                        <select id="filterMonth" onchange="generateBilan()">
+                            <option value="">Tous les mois</option>
+                            <option value="01">Janvier</option><option value="02">Février</option>
+                            <option value="03">Mars</option><option value="04">Avril</option>
+                            <option value="05">Mai</option><option value="06">Juin</option>
+                            <option value="07">Juillet</option><option value="08">Août</option>
+                            <option value="09">Septembre</option><option value="10">Octobre</option>
+                            <option value="11">Novembre</option><option value="12">Décembre</option>
+                        </select>
+                    </div>
+                    <table id="bilanTable"></table>
+                    <div id="pagination-bilan" class="pagination-container"></div>
+                </div>
+            </div>
+
+            <div id="backup" class="section">
+                <div class="header-title"><h2>Gestion des Données</h2></div>
+                <div class="card" style="text-align: center;">
+                    <button class="btn btn-success" onclick="exportData()"><i class="fas fa-download"></i> EXPORTER (JSON)</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="nav-item active" id="nav-inventory" onclick="showSection('inventory')"><i class="fas fa-gem"></i><span>Produits</span></div>
+            <div class="nav-item" id="nav-stock" onclick="showSection('stock')"><i class="fas fa-box-open"></i><span>Stock</span></div>
+            <div class="nav-item" id="nav-stockHist" onclick="showSection('stockHist')"><i class="fas fa-history"></i><span>Histo.</span></div>
+            <div class="nav-item" id="nav-users" onclick="showSection('users')"><i class="fas fa-crown"></i><span>Staff</span></div>
+            <div class="nav-item" id="nav-sales" onclick="showSection('sales')"><i class="fas fa-receipt"></i><span>Ventes</span></div>
+            <div class="nav-item" id="nav-bilan" onclick="showSection('bilan')"><i class="fas fa-chart-pie"></i><span>Bilan</span></div>
+            <div class="nav-item" id="nav-backup" onclick="showSection('backup')"><i class="fas fa-save"></i><span>Sauvegarde</span></div>
+            <div class="nav-item" onclick="logout()"><i class="fas fa-power-off"></i><span>Déco.</span></div>
+        </div>
+    </div>
+
+    <div id="modalStock" style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 10000;">
+        <div class="modal-content" style="background: white; padding: 35px; width: 350px; border-radius:30px;">
+            <h2 id="modalProdName"></h2>
+            <p>Stock actuel : <b id="modalCurrentStock"></b></p>
+            <input type="number" id="addQty" placeholder="Quantité à ajouter">
+            <input type="hidden" id="modalProdKey">
+            <button class="btn btn-primary" style="width:100%; margin-top:15px;" onclick="saveNewStock()">VALIDER</button>
+            <button class="btn" style="width:100%; margin-top:10px; background:#eee;" onclick="document.getElementById('modalStock').style.display='none'">FERMER</button>
+        </div>
+    </div>
+
+    <script>
+        const DB_URL = "https://djami-e16ab-default-rtdb.firebaseio.com/";
+        const ITEMS_PER_PAGE = 8;
+        let currentPage = { inventory: 1, stock: 1, stockHist: 1, sales: 1, bilan: 1 };
+        let currentImageBase64 = "";
+
+        // --- FIREBASE WRAPPERS ---
+        async function fbGet(path) {
+            const res = await fetch(`${DB_URL}${path}.json`);
+            return await res.json();
+        }
+        async function fbPut(path, data) {
+            await fetch(`${DB_URL}${path}.json`, { method: 'PUT', body: JSON.stringify(data) });
+        }
+        async function fbPost(path, data) {
+            await fetch(`${DB_URL}${path}.json`, { method: 'POST', body: JSON.stringify(data) });
+        }
+        async function fbDelete(path) {
+            await fetch(`${DB_URL}${path}.json`, { method: 'DELETE' });
+        }
+
+        // --- AUTH ---
+        async function checkLogin() {
+            const user = document.getElementById('adminUser').value;
+            const pass = document.getElementById('adminPass').value;
+            const creds = await fbGet('adminCreds') || { user: 'admin', pass: 'admin' };
+            if(user === creds.user && pass === creds.pass) {
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('admin-content').style.display = 'flex';
+                showSection('inventory');
+            } else { document.getElementById('loginError').style.display = 'block'; }
+        }
+        function logout() { location.reload(); }
+
+        function showSection(id) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            if(document.getElementById('nav-'+id)) document.getElementById('nav-'+id).classList.add('active');
+            refreshView(id);
+        }
+
+        async function refreshView(id) {
+            if(id === 'inventory') renderProducts();
+            if(id === 'stock') renderStockGrid();
+            if(id === 'stockHist') renderStockHistory();
+            if(id === 'sales') renderSales();
+            if(id === 'bilan') { await loadBilanFilters(); generateBilan(); }
+            if(id === 'users') renderUsers();
+        }
+
+        function paginate(data, page, containerId, renderCallback, sectionKey) {
+            const totalPages = Math.ceil(data.length / ITEMS_PER_PAGE) || 1;
+            const start = (page - 1) * ITEMS_PER_PAGE;
+            const paginatedData = data.slice(start, start + ITEMS_PER_PAGE);
+            renderCallback(paginatedData);
+            document.getElementById(containerId).innerHTML = `
+                <button class="page-btn" onclick="changePage('${sectionKey}', ${page - 1})" ${page === 1 ? 'disabled' : ''}>Précédent</button>
+                <span>Page ${page} / ${totalPages}</span>
+                <button class="page-btn" onclick="changePage('${sectionKey}', ${page + 1})" ${page === totalPages ? 'disabled' : ''}>Suivant</button>`;
+        }
+        function changePage(key, newPage) { currentPage[key] = newPage; refreshView(key); }
+
+        // --- RENDERS ---
+        async function renderProducts() {
+            const productsObj = await fbGet('products') || {};
+            const products = Object.keys(productsObj).map(key => ({...productsObj[key], id: key}));
+            paginate(products, currentPage.inventory, 'pagination-inventory', (data) => {
+                document.getElementById('productTable').innerHTML = data.map(p => `
+                    <tr>
+                        <td><img src="${p.img || ''}" class="img-thumb"></td>
+                        <td><b>${p.name}</b><br><small>${p.barcode}</small></td>
+                        <td>${parseInt(p.price).toLocaleString()} F</td>
+                        <td><b>${p.stock}</b></td>
+                        <td><button class="btn btn-danger" onclick="deleteItem('products', '${p.id}')"><i class="fas fa-trash"></i></button></td>
+                    </tr>`).join('');
+            }, 'inventory');
+        }
+
+        async function renderSales() {
+            const salesObj = await fbGet('salesHistory') || {};
+            const sales = Object.values(salesObj).reverse();
+            paginate(sales, currentPage.sales, 'pagination-sales', (data) => {
+                document.getElementById('salesTable').innerHTML = data.map(s => {
+                    const details = s.items.map(it => `
+                        <div class="tooltip-item">
+                            <img src="${it.img || ''}" style="width:30px;height:30px;border-radius:5px;object-fit:cover;">
+                            <div style="flex:1; font-size:11px;"><b>${it.name}</b><br>${it.qty} x ${it.price}F</div>
+                        </div>`).join('');
+                    return `<tr>
+                        <td><small>${s.date} ${s.time}</small></td>
+                        <td>${s.user}</td>
+                        <td><span class="cart-link">Voir ${s.items.length} articles<div class="tooltip">${details}</div></span></td>
+                        <td><b>${s.total.toLocaleString()} F</b></td>
+                    </tr>`;
+                }).join('');
+            }, 'sales');
+        }
+
+        async function renderStockGrid() {
+            const productsObj = await fbGet('products') || {};
+            const products = Object.keys(productsObj).map(key => ({...productsObj[key], id: key}));
+            paginate(products, currentPage.stock, 'pagination-stock', (data) => {
+                document.getElementById('stockGrid').innerHTML = data.map(p => `
+                    <div class="stock-item" onclick="openStockModal('${p.id}')">
+                        <img src="${p.img || ''}" style="width:100%;height:100px;object-fit:contain;">
+                        <div><b>${p.name}</b></div><div style="color:var(--primary)">Stock: ${p.stock}</div>
+                    </div>`).join('');
+            }, 'stock');
+        }
+
+        async function renderStockHistory() {
+            const histObj = await fbGet('stockHistory') || {};
+            const hist = Object.values(histObj).reverse();
+            paginate(hist, currentPage.stockHist, 'pagination-stockHist', (data) => {
+                document.getElementById('stockHistTable').innerHTML = data.map(h => `
+                    <tr><td><img src="${h.img}" class="img-thumb"></td><td><small>${h.date}</small></td><td>${h.product}</td><td>${h.initial}</td><td style="color:var(--success)">+${h.added}</td><td><b>${h.final}</b></td></tr>
+                `).join('');
+            }, 'stockHist');
+        }
+
+        // --- CORE LOGIC ---
+        function encodeImage(el) {
+            const reader = new FileReader();
+            reader.onloadend = () => currentImageBase64 = reader.result;
+            if(el.files[0]) reader.readAsDataURL(el.files[0]);
+        }
+
+        async function addProduct() {
+            const name = document.getElementById('pName').value;
+            const price = document.getElementById('pPrice').value;
+            const barcode = document.getElementById('pBarcode').value;
+            const stock = parseInt(document.getElementById('pStock').value) || 0;
+            if(!name || !price || !barcode) return alert("Champs requis");
+            await fbPost('products', { name, price, stock, barcode, img: currentImageBase64 });
+            renderProducts();
+        }
+
+        async function openStockModal(key) {
+            const p = await fbGet(`products/${key}`);
+            document.getElementById('modalProdName').innerText = p.name;
+            document.getElementById('modalCurrentStock').innerText = p.stock;
+            document.getElementById('modalProdKey').value = key;
+            document.getElementById('modalStock').style.display = 'flex';
+        }
+
+        async function saveNewStock() {
+            const key = document.getElementById('modalProdKey').value;
+            const qty = parseInt(document.getElementById('addQty').value);
+            if(!qty) return;
+            const p = await fbGet(`products/${key}`);
+            const newStock = p.stock + qty;
+            await fbPut(`products/${key}/stock`, newStock);
+            await fbPost('stockHistory', { date: new Date().toLocaleDateString(), product: p.name, img: p.img, initial: p.stock, added: qty, final: newStock });
+            document.getElementById('modalStock').style.display = 'none';
+            refreshView('stock');
+        }
+
+        async function generateBilan() {
+            const salesObj = await fbGet('salesHistory') || {};
+            const sales = Object.values(salesObj);
+            const filtered = sales.filter(s => {
+                const parts = s.date.split('/');
+                const isoDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                return (!document.getElementById('filterVendeur').value || s.user === document.getElementById('filterVendeur').value) &&
+                       (!document.getElementById('filterDate').value || isoDate === document.getElementById('filterDate').value) &&
+                       (!document.getElementById('filterMonth').value || parts[1] === document.getElementById('filterMonth').value);
+            });
+            let total = 0; filtered.forEach(s => total += s.total);
+            document.getElementById('bilanTotal').innerText = total.toLocaleString() + " F";
+            document.getElementById('bilanCount').innerText = filtered.length;
+            paginate(filtered.reverse(), currentPage.bilan, 'pagination-bilan', (data) => {
+                document.getElementById('bilanTable').innerHTML = `<thead><tr><th>Date</th><th>Vendeuse</th><th>Total</th></tr></thead><tbody>` + 
+                data.map(s => `<tr><td>${s.date}</td><td>${s.user}</td><td>${s.total.toLocaleString()} F</td></tr>`).join('') + `</tbody>`;
+            }, 'bilan');
+        }
+
+        async function updateAdminAccess() {
+            const newUser = document.getElementById('newAdminUser').value;
+            const newPass = document.getElementById('newAdminPass').value;
+            if(!newUser || !newPass) return alert("Veuillez remplir les deux champs");
+            await fbPut('adminCreds', { user: newUser, pass: newPass });
+            alert("Accès Admin mis à jour !");
+        }
+
+        async function exportData() {
+            const data = await fbGet('');
+            const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'}));
+            a.download = `backup_firebase_${new Date().toLocaleDateString()}.json`; a.click();
+        }
+
+        async function deleteItem(path, key) { if(confirm("Supprimer ?")) { await fbDelete(`${path}/${key}`); refreshView(document.querySelector('.section.active').id); }}
+        async function clearSalesHistory() { if(confirm("Vider ?")) { await fbDelete('salesHistory'); renderSales(); }}
+        async function clearStockHistory() { if(confirm("Vider ?")) { await fbDelete('stockHistory'); renderStockHistory(); }}
+        
+        async function addUser() { 
+            const name = document.getElementById('uName').value; 
+            const pass = document.getElementById('uPass').value; 
+            await fbPost('users', {name, pass}); 
+            renderUsers(); 
+        }
+        async function renderUsers() { 
+            const usersObj = await fbGet('users') || {}; 
+            const users = Object.keys(usersObj).map(key => ({...usersObj[key], id: key}));
+            document.getElementById('userTable').innerHTML = users.map(u => `<tr><td><b>${u.name}</b></td><td><button class="btn btn-danger" onclick="deleteItem('users','${u.id}')">X</button></td></tr>`).join(''); 
+        }
+        async function loadBilanFilters() { 
+            const usersObj = await fbGet('users') || {}; 
+            const users = Object.values(usersObj);
+            document.getElementById('filterVendeur').innerHTML = '<option value="">Toutes</option>' + users.map(u => `<option value="${u.name}">${u.name}</option>`).join(''); 
+        }
+    </script>
+</body>
+</html>
