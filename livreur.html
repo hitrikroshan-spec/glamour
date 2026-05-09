@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Espace Livreur</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #000; font-family: 'Poppins', sans-serif; display: flex; justify-content: center; color: white; }
+        .iphone-container { width: 100%; max-width: 414px; background: #111; height: 100vh; position: relative; overflow-y: auto; padding: 50px 20px; }
+        
+        h2 { margin-bottom: 20px; border-left: 4px solid #6c5ce7; padding-left: 10px; }
+        
+        .delivery-card { background: #222; border-radius: 20px; padding: 20px; margin-bottom: 20px; border: 1px solid #333; position: relative; }
+        .delivery-card h4 { color: #6c5ce7; margin-bottom: 10px; }
+        
+        .product-snapshot { display: flex; gap: 10px; overflow-x: auto; padding: 10px 0; scrollbar-width: none; }
+        .product-snapshot img { width: 60px; height: 60px; border-radius: 10px; object-fit: cover; border: 2px solid #6c5ce7; }
+        
+        .btn-done { width: 100%; background: #2ecc71; border: none; color: white; padding: 12px; border-radius: 15px; font-weight: 600; margin-top: 15px; cursor: pointer; }
+        .btn-done.livre { background: #444; cursor: default; }
+
+        .refresh-btn { position: fixed; bottom: 30px; right: 20px; background: #6c5ce7; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; box-shadow: 0 5px 20px rgba(108, 92, 231, 0.4); }
+    </style>
+</head>
+<body>
+
+<div class="iphone-container">
+    <h2>Livraisons</h2>
+    <div id="deliveryList"></div>
+    
+    <div class="refresh-btn" onclick="loadDeliveries()">
+        <i class="fas fa-sync-alt"></i>
+    </div>
+</div>
+
+<script>
+    const DB_URL = "https://djami-e16ab-default-rtdb.firebaseio.com/";
+
+    async function loadDeliveries() {
+        const res = await fetch(`${DB_URL}orders.json`);
+        const orders = await res.json() || {};
+        const list = document.getElementById('deliveryList');
+        
+        list.innerHTML = Object.keys(orders).reverse().map(id => {
+            const isLivre = orders[id].status === 'livre';
+            return `
+                <div class="delivery-card">
+                    <h4>Commande #${id.slice(-5)}</h4>
+                    <div style="font-size:0.8rem; color:#aaa"><i class="far fa-clock"></i> ${orders[id].date}</div>
+                    <div style="margin-top:10px"><b>Total à encaisser: ${orders[id].total} F</b></div>
+                    
+                    <div class="product-snapshot">
+                        ${orders[id].items.map(it => `
+                            <div style="text-align:center">
+                                <img src="${it.img}">
+                                <div style="font-size:0.6rem; margin-top:4px">${it.name}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <button class="btn-done ${isLivre ? 'livre' : ''}" onclick="markAsDone('${id}')">
+                        ${isLivre ? '<i class="fas fa-check"></i> LIVRÉ' : 'MARQUER COMME LIVRÉ'}
+                    </button>
+                </div>
+            `;
+        }).join('');
+    }
+
+    async function markAsDone(id) {
+        if(confirm("Confirmer la livraison ?")) {
+            await fetch(`${DB_URL}orders/${id}/status.json`, { 
+                method: 'PUT', 
+                body: JSON.stringify("livre") 
+            });
+            loadDeliveries();
+        }
+    }
+
+    window.onload = loadDeliveries;
+    // Synchro automatique toutes les 30 secondes
+    setInterval(loadDeliveries, 30000);
+</script>
+</body>
+</html>
