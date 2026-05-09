@@ -40,6 +40,8 @@
         .checkout-box { padding: 25px; border-top: 1px solid var(--border); background: #f8fafc; }
         .total-row { display: flex; justify-content: space-between; font-size: 1.4em; font-weight: 900; color: var(--sidebar-bg); }
         .btn-checkout { width: 100%; padding: 18px; background: var(--sidebar-active); color: white; border: none; border-radius: 15px; font-weight: 800; cursor: pointer; margin-top: 15px; transition: 0.2s; }
+        .btn-logout { background: none; border: 1px solid #334155; color: #94a3b8; width: 100%; padding: 10px; border-radius: 8px; cursor: pointer; margin-top: 10px; font-weight: 600; }
+        .btn-logout:hover { color: var(--danger); border-color: var(--danger); }
     </style>
 </head>
 <body>
@@ -65,8 +67,11 @@
             <div id="sellerHistory"></div>
         </div>
         <div style="padding: 20px; border-top: 1px solid #1e293b;">
-            <button onclick="loadData()" style="background: none; border: 1px solid #334155; color: #94a3b8; width: 100%; padding: 10px; border-radius: 8px; cursor: pointer;">
+            <button onclick="loadData()" style="background: none; border: 1px solid #334155; color: #94a3b8; width: 100%; padding: 10px; border-radius: 8px; cursor: pointer; margin-bottom: 5px;">
                 <i class="fas fa-sync"></i> Rafraîchir
+            </button>
+            <button onclick="logout()" class="btn-logout">
+                <i class="fas fa-power-off"></i> Déconnexion
             </button>
         </div>
     </div>
@@ -93,10 +98,19 @@
         const DB_URL = "https://djami-e16ab-default-rtdb.firebaseio.com/";
         let products = [], cart = [], currentUser = "Inconnu";
         const catcher = document.getElementById('barcode-catcher');
+        let eventSource = null;
 
         async function fbGet(path) {
             const res = await fetch(`${DB_URL}${path}.json`);
             return await res.json();
+        }
+
+        // --- AUTO REFRESH (SYNC) ---
+        function startSync() {
+            if (eventSource) eventSource.close();
+            eventSource = new EventSource(`${DB_URL}.json`);
+            eventSource.addEventListener('put', () => loadData());
+            eventSource.addEventListener('patch', () => loadData());
         }
 
         function focusScanner() { if (document.activeElement.tagName !== 'INPUT') catcher.focus(); }
@@ -117,7 +131,13 @@
                 document.getElementById('loginOverlay').style.display = 'none';
                 document.getElementById('userDisplay').innerHTML = `<i class="fas fa-check-circle"></i> ${currentUser}`;
                 loadData();
+                startSync();
             } else { alert("Erreur de connexion."); }
+        }
+
+        function logout() {
+            if (eventSource) eventSource.close();
+            location.reload();
         }
 
         async function loadData() {
@@ -142,7 +162,7 @@
 
         function filterProducts() {
             const val = document.getElementById('searchInput').value.toLowerCase();
-            renderProducts(products.filter(p => p.name.toLowerCase().includes(val) || p.barcode.includes(val)));
+            renderProducts(products.filter(p => p.name.toLowerCase().includes(val) || (p.barcode && p.barcode.includes(val))));
         }
 
         function addToCart(barcode) {
@@ -177,9 +197,9 @@
             const mySales = history.filter(s => s.user === currentUser && s.date === today).reverse();
             document.getElementById('sellerHistory').innerHTML = mySales.map((s, index) => `
                 <div class="history-row">
-                    <div><div style="color:white; font-weight:600;">${s.total.toLocaleString()} F</div><div style="font-size:0.85em; color:#64748b;">${s.time}</div></div>
-                    <span class="cart-link">Détails<div class="tooltip" style="top: ${180 + (index * 55)}px;">
-                        ${s.items.map(it => `<div style="display:flex;gap:10px;margin-bottom:5px;"><img src="${it.img}" style="width:30px;height:30px;"><b>${it.name}</b> (x${it.qty})</div>`).join('')}
+                    <div><div style="color:white; font-weight:600;">${(s.total || 0).toLocaleString()} F</div><div style="font-size:0.85em; color:#64748b;">${s.time}</div></div>
+                    <span class="cart-link">Détails<div class="tooltip" style="bottom: 20px;">
+                        ${(s.items || []).map(it => `<div style="display:flex;gap:10px;margin-bottom:5px;"><img src="${it.img}" style="width:30px;height:30px;object-fit:cover;border-radius:4px;"><b>${it.name}</b> (x${it.qty})</div>`).join('')}
                     </div></span>
                 </div>`).join('');
         }
@@ -188,7 +208,8 @@
             if (cart.length === 0) return;
             for(let item of cart) {
                 const p = products.find(prod => prod.id === item.id);
-                await fetch(`${DB_URL}products/${p.id}/stock.json`, { method: 'PUT', body: (p.stock - item.qty) });
+                const newStock = Math.max(0, p.stock - item.qty);
+                await fetch(`${DB_URL}products/${p.id}/stock.json`, { method: 'PUT', body: JSON.stringify(newStock) });
             }
             const now = new Date();
             await fetch(`${DB_URL}salesHistory.json`, { method: 'POST', body: JSON.stringify({
@@ -198,7 +219,8 @@
                 total: cart.reduce((s, i) => s + (i.price * i.qty), 0),
                 items: cart.map(c => ({ name: c.name, qty: c.qty, img: c.img, price: c.price }))
             })});
-            cart = []; updateCart(); loadData(); alert("Vente validée !");
+            cart = []; updateCart(); alert("Vente validée !");
+            // loadData() sera appelé automatiquement par le sync
         }
     </script>
 </body>
