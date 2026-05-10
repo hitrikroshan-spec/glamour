@@ -1,20 +1,16 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-      
-  
-   <meta charset="UTF-8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>PATRONNE GLAMOUR MARKET</title>
 
     <link rel="manifest" href="manifest.json">
-
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Glamour Market">
-    <link rel="apple-touch-icon" href="logo3.png">
-
-    <meta name="theme-color" content="#000000">
+    <link rel="apple-touch-icon" href="logo.png">
+    <meta name="theme-color" content="#3d405b">
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   
@@ -52,7 +48,7 @@
             background: white; padding: 40px; border-radius: 30px; width: 320px; text-align: center;
             box-shadow: 0 20px 50px rgba(0,0,0,0.3);
         }
-        .login-card input { margin-bottom: 15px; border: 1px solid #ddd; }
+        .login-card input { margin-bottom: 15px; border: 1px solid #ddd; width: 100%; box-sizing: border-box; padding: 12px; border-radius: 10px; }
         
         #admin-content { display: none; height: 100%; width: 100%; flex-direction: column; }
         
@@ -195,15 +191,6 @@
                     </div>
                 </div>
                 <div class="card"><table id="userTable"></table></div>
-
-                <div class="card">
-                    <h3 style="margin-top:0; font-family:'Playfair Display'">Modifier Accès Admin</h3>
-                    <div style="display:flex; gap:15px;">
-                        <input type="text" id="newAdminUser" placeholder="Nouveau Nom Admin">
-                        <input type="password" id="newAdminPass" placeholder="Nouveau Mot de passe">
-                    </div>
-                    <button class="btn btn-primary" style="margin-top:20px;" onclick="updateAdminAccess()">METTRE À JOUR</button>
-                </div>
             </div>
 
             <div id="sales" class="section">
@@ -230,15 +217,6 @@
                     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:10px; margin-bottom:20px;">
                         <select id="filterVendeur" onchange="generateBilan()"></select>
                         <input type="date" id="filterDate" onchange="generateBilan()">
-                        <select id="filterMonth" onchange="generateBilan()">
-                            <option value="">Tous les mois</option>
-                            <option value="01">Janvier</option><option value="02">Février</option>
-                            <option value="03">Mars</option><option value="04">Avril</option>
-                            <option value="05">Mai</option><option value="06">Juin</option>
-                            <option value="07">Juillet</option><option value="08">Août</option>
-                            <option value="09">Septembre</option><option value="10">Octobre</option>
-                            <option value="11">Novembre</option><option value="12">Décembre</option>
-                        </select>
                     </div>
                     <table id="bilanTable"></table>
                     <div id="pagination-bilan" class="pagination-container"></div>
@@ -277,13 +255,23 @@
     </div>
 
     <script>
+        // --- CONFIGURATION FIREBASE ---
         const DB_URL = "https://djami-e16ab-default-rtdb.firebaseio.com/";
         const ITEMS_PER_PAGE = 8;
         let currentPage = { inventory: 1, stock: 1, stockHist: 1, sales: 1, bilan: 1 };
         let currentImageBase64 = "";
         let eventSource = null;
 
-        // --- FIREBASE WRAPPERS ---
+        // --- ENREGISTREMENT DU SERVICE WORKER (PWA) ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                .then(reg => console.log('Service Worker enregistré !'))
+                .catch(err => console.log('Erreur SW:', err));
+            });
+        }
+
+        // --- FONCTIONS FIREBASE ---
         async function fbGet(path) {
             const res = await fetch(`${DB_URL}${path}.json`);
             return await res.json();
@@ -298,21 +286,21 @@
             await fetch(`${DB_URL}${path}.json`, { method: 'DELETE' });
         }
 
-        // --- AUTO REFRESH (FIREBASE WATCH) ---
+        // --- SYNCHRONISATION TEMPS RÉEL ---
         function startSync() {
             if (eventSource) eventSource.close();
             eventSource = new EventSource(`${DB_URL}.json`);
-            eventSource.addEventListener('put', (e) => {
+            eventSource.addEventListener('put', () => {
                 const activeSection = document.querySelector('.section.active').id;
                 refreshView(activeSection);
             });
-            eventSource.addEventListener('patch', (e) => {
+            eventSource.addEventListener('patch', () => {
                 const activeSection = document.querySelector('.section.active').id;
                 refreshView(activeSection);
             });
         }
 
-        // --- AUTH ---
+        // --- CONNEXION ---
         async function checkLogin() {
             const user = document.getElementById('adminUser').value;
             const pass = document.getElementById('adminPass').value;
@@ -321,14 +309,16 @@
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('admin-content').style.display = 'flex';
                 showSection('inventory');
-                startSync(); // Lancer la synchro après login
+                startSync();
             } else { document.getElementById('loginError').style.display = 'block'; }
         }
+
         function logout() { 
             if (eventSource) eventSource.close();
             location.reload(); 
         }
 
+        // --- GESTION DE L'INTERFACE ---
         function showSection(id) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -359,9 +349,10 @@
                     <button class="page-btn" onclick="changePage('${sectionKey}', ${page + 1})" ${page === totalPages ? 'disabled' : ''}>Suivant</button>`;
             }
         }
+
         function changePage(key, newPage) { currentPage[key] = newPage; refreshView(key); }
 
-        // --- RENDERS ---
+        // --- RENDUS (TABLEAUX ET GRILLES) ---
         async function renderProducts() {
             const productsObj = await fbGet('products') || {};
             const products = Object.keys(productsObj).map(key => ({...productsObj[key], id: key}));
@@ -419,7 +410,7 @@
             }, 'stockHist');
         }
 
-        // --- CORE LOGIC ---
+        // --- ACTIONS ---
         function encodeImage(el) {
             const reader = new FileReader();
             reader.onloadend = () => currentImageBase64 = reader.result;
@@ -433,7 +424,6 @@
             const stock = parseInt(document.getElementById('pStock').value) || 0;
             if(!name || !price || !barcode) return alert("Champs requis");
             await fbPost('products', { name, price, stock, barcode, img: currentImageBase64 });
-            // Pas besoin de rafraîchir manuellement, startSync() s'en occupe
         }
 
         async function openStockModal(key) {
@@ -464,8 +454,7 @@
                 if(parts.length < 3) return false;
                 const isoDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
                 return (!document.getElementById('filterVendeur').value || s.user === document.getElementById('filterVendeur').value) &&
-                       (!document.getElementById('filterDate').value || isoDate === document.getElementById('filterDate').value) &&
-                       (!document.getElementById('filterMonth').value || parts[1] === document.getElementById('filterMonth').value);
+                       (!document.getElementById('filterDate').value || isoDate === document.getElementById('filterDate').value);
             });
             let total = 0; filtered.forEach(s => total += (s.total || 0));
             document.getElementById('bilanTotal').innerText = total.toLocaleString() + " F";
@@ -474,14 +463,6 @@
                 document.getElementById('bilanTable').innerHTML = `<thead><tr><th>Date</th><th>Vendeuse</th><th>Total</th></tr></thead><tbody>` + 
                 data.map(s => `<tr><td>${s.date}</td><td>${s.user}</td><td>${(s.total || 0).toLocaleString()} F</td></tr>`).join('') + `</tbody>`;
             }, 'bilan');
-        }
-
-        async function updateAdminAccess() {
-            const newUser = document.getElementById('newAdminUser').value;
-            const newPass = document.getElementById('newAdminPass').value;
-            if(!newUser || !newPass) return alert("Veuillez remplir les deux champs");
-            await fbPut('adminCreds', { user: newUser, pass: newPass });
-            alert("Accès Admin mis à jour !");
         }
 
         async function exportData() {
