@@ -13,8 +13,6 @@
     <link rel="apple-touch-icon" href="logo3.png">
     <meta name="theme-color" content="#3d405b">
 
-  
-  
     <style>
         /* Palette Glamour & Féminine */
         :root { 
@@ -82,7 +80,6 @@
 
         .card { background: var(--glass); border-radius: 24px; border: 1px solid rgba(255,255,255,0.5); padding: 30px; margin-bottom: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); }
         
-        /* Pagination */
         .pagination-container { display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 20px; }
         .page-btn { background: var(--white); border: 1px solid var(--primary); color: var(--primary); padding: 5px 12px; border-radius: 8px; cursor: pointer; transition: 0.3s; font-weight: 600; }
         .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
@@ -183,8 +180,18 @@
             </div>
 
             <div id="users" class="section">
-                <div class="header-title"><h2>Équipe</h2></div>
+                <div class="header-title"><h2>Paramètres & Équipe</h2></div>
                 <div class="card">
+                    <h3 style="margin-top:0;">Réinitialiser Accès Principal</h3>
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:15px;">
+                        <input type="text" id="newAdminUser" placeholder="Nouvel Utilisateur Admin">
+                        <input type="password" id="newAdminPass" placeholder="Nouveau Mot de passe">
+                    </div>
+                    <button class="btn btn-success" style="margin-top:15px;" onclick="resetAdminCredentials()">METTRE À JOUR ADMIN</button>
+                </div>
+
+                <div class="card">
+                    <h3>Ajouter Administrateur Secondaire</h3>
                     <div style="display:flex; gap:15px;">
                         <input type="text" id="uName" placeholder="Nom">
                         <input type="password" id="uPass" placeholder="Code">
@@ -256,15 +263,13 @@
     </div>
 
     <script>
-        // --- CONFIGURATION FIREBASE ---
         const DB_URL = "https://djami-e16ab-default-rtdb.firebaseio.com/";
         const ITEMS_PER_PAGE = 8;
         let currentPage = { inventory: 1, stock: 1, stockHist: 1, sales: 1, bilan: 1 };
         let currentImageBase64 = "";
         let eventSource = null;
-        let currentUserRole = "secondary"; // "primary" ou "secondary"
+        let currentUserRole = "secondary"; 
 
-        // --- ENREGISTREMENT DU SERVICE WORKER (PWA) ---
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js')
@@ -273,7 +278,6 @@
             });
         }
 
-        // --- FONCTIONS FIREBASE ---
         async function fbGet(path) {
             const res = await fetch(`${DB_URL}${path}.json`);
             return await res.json();
@@ -288,7 +292,6 @@
             await fetch(`${DB_URL}${path}.json`, { method: 'DELETE' });
         }
 
-        // --- SYNCHRONISATION TEMPS RÉEL ---
         function startSync() {
             if (eventSource) eventSource.close();
             eventSource = new EventSource(`${DB_URL}.json`);
@@ -296,50 +299,44 @@
                 const activeSection = document.querySelector('.section.active').id;
                 refreshView(activeSection);
             });
-            eventSource.addEventListener('patch', () => {
-                const activeSection = document.querySelector('.section.active').id;
-                refreshView(activeSection);
-            });
         }
 
-        // --- CONNEXION ---
         async function checkLogin() {
             const user = document.getElementById('adminUser').value;
             const pass = document.getElementById('adminPass').value;
             
-            // Récupérer les identifiants Admin Principal et Secondaire
-            const creds = await fbGet('adminCreds') || { user: 'admin', pass: 'admin' };
-            const secondaryCreds = await fbGet('secondaryAdminCreds') || { user: 'admin2', pass: '1234' };
+            // On récupère les identifiants admin principal de Firebase
+            let adminCreds = await fbGet('adminCreds');
+            if(!adminCreds) {
+                // Par défaut si non défini
+                adminCreds = { user: 'admin', pass: 'admin' };
+                await fbPut('adminCreds', adminCreds);
+            }
 
-            if(user === creds.user && pass === creds.pass) {
+            // On récupère les autres utilisateurs (Admin secondaires)
+            const usersObj = await fbGet('users') || {};
+            const secondaryUsers = Object.values(usersObj);
+            const secondaryMatch = secondaryUsers.find(u => u.name === user && u.pass === pass);
+
+            if(user === adminCreds.user && pass === adminCreds.pass) {
                 currentUserRole = "primary";
-                setupRoleUI();
+                setupSidebar();
                 loginSuccess();
-            } else if(user === secondaryCreds.user && pass === secondaryCreds.pass) {
+            } else if(secondaryMatch) {
                 currentUserRole = "secondary";
-                setupRoleUI();
+                setupSidebar();
                 loginSuccess();
             } else { 
                 document.getElementById('loginError').style.display = 'block'; 
             }
         }
 
-        function setupRoleUI() {
-            if(currentUserRole === "secondary") {
-                // Cacher les menus interdits pour l'admin secondaire
-                document.getElementById('nav-stockHist').style.display = 'none';
-                document.getElementById('nav-users').style.display = 'none';
-                document.getElementById('nav-sales').style.display = 'none';
-                document.getElementById('nav-bilan').style.display = 'none';
-                document.getElementById('nav-backup').style.display = 'none';
-            } else {
-                // Afficher tout pour l'admin principal
-                document.getElementById('nav-stockHist').style.display = 'flex';
-                document.getElementById('nav-users').style.display = 'flex';
-                document.getElementById('nav-sales').style.display = 'flex';
-                document.getElementById('nav-bilan').style.display = 'flex';
-                document.getElementById('nav-backup').style.display = 'flex';
-            }
+        function setupSidebar() {
+            const items = ['stockHist', 'users', 'sales', 'bilan', 'backup'];
+            items.forEach(id => {
+                const nav = document.getElementById('nav-' + id);
+                if(nav) nav.style.display = (currentUserRole === "primary") ? "flex" : "none";
+            });
         }
 
         function loginSuccess() {
@@ -354,13 +351,22 @@
             location.reload(); 
         }
 
-        // --- GESTION DE L'INTERFACE ---
+        async function resetAdminCredentials() {
+            const newUser = document.getElementById('newAdminUser').value;
+            const newPass = document.getElementById('newAdminPass').value;
+            if(!newUser || !newPass) return alert("Veuillez remplir les deux champs");
+            if(confirm("Changer les identifiants de l'administrateur principal ?")) {
+                await fbPut('adminCreds', { user: newUser, pass: newPass });
+                alert("Identifiants mis à jour ! Reconnexion requise.");
+                logout();
+            }
+        }
+
         function showSection(id) {
-            // Restriction de sécurité pour la navigation
-            if(currentUserRole === "secondary" && id !== 'inventory' && id !== 'stock') {
+            // Restriction d'accès logiciel
+            if(currentUserRole === "secondary" && !['inventory', 'stock'].includes(id)) {
                 return;
             }
-
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             document.getElementById(id).classList.add('active');
@@ -393,7 +399,6 @@
 
         function changePage(key, newPage) { currentPage[key] = newPage; refreshView(key); }
 
-        // --- RENDUS (TABLEAUX ET GRILLES) ---
         async function renderProducts() {
             const productsObj = await fbGet('products') || {};
             const products = Object.keys(productsObj).map(key => ({...productsObj[key], id: key}));
@@ -451,7 +456,6 @@
             }, 'stockHist');
         }
 
-        // --- ACTIONS ---
         function encodeImage(el) {
             const reader = new FileReader();
             reader.onloadend = () => currentImageBase64 = reader.result;
@@ -509,7 +513,7 @@
         async function exportData() {
             const data = await fbGet('');
             const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'}));
-            a.download = `backup_firebase_${new Date().toLocaleDateString()}.json`; a.click();
+            a.download = `backup_glamour_${new Date().toLocaleDateString()}.json`; a.click();
         }
 
         async function deleteItem(path, key) { if(confirm("Supprimer ?")) { await fbDelete(`${path}/${key}`); }}
@@ -527,7 +531,8 @@
         async function renderUsers() { 
             const usersObj = await fbGet('users') || {}; 
             const users = Object.keys(usersObj).map(key => ({...usersObj[key], id: key}));
-            document.getElementById('userTable').innerHTML = users.map(u => `<tr><td><b>${u.name}</b></td><td><button class="btn btn-danger" onclick="deleteItem('users','${u.id}')">X</button></td></tr>`).join(''); 
+            document.getElementById('userTable').innerHTML = `<thead><tr><th>Utilisateur Secondaire</th><th>Action</th></tr></thead><tbody>` + 
+            users.map(u => `<tr><td><b>${u.name}</b></td><td><button class="btn btn-danger" onclick="deleteItem('users','${u.id}')">X</button></td></tr>`).join('') + `</tbody>`; 
         }
         async function loadBilanFilters() { 
             const usersObj = await fbGet('users') || {}; 
