@@ -2,16 +2,19 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>PATRONNE GLAMOUR MARKET</title>
 
     <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#3d405b">
+
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Glamour Market">
     <link rel="apple-touch-icon" href="logo3.png">
-    <meta name="theme-color" content="#3d405b">
+    
+    <link rel="apple-touch-startup-image" href="logo3.png">
 
     <style>
         /* Palette Glamour & Féminine */
@@ -270,10 +273,11 @@
         let eventSource = null;
         let currentUserRole = "secondary"; 
 
+        // Enregistrement du Service Worker pour PWA
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js')
-                .then(reg => console.log('Service Worker enregistré !'))
+                .then(reg => console.log('Service Worker enregistré !', reg.scope))
                 .catch(err => console.log('Erreur SW:', err));
             });
         }
@@ -305,15 +309,12 @@
             const user = document.getElementById('adminUser').value;
             const pass = document.getElementById('adminPass').value;
             
-            // On récupère les identifiants admin principal de Firebase
             let adminCreds = await fbGet('adminCreds');
             if(!adminCreds) {
-                // Par défaut si non défini
                 adminCreds = { user: 'admin', pass: 'admin' };
                 await fbPut('adminCreds', adminCreds);
             }
 
-            // On récupère les autres utilisateurs (Admin secondaires)
             const usersObj = await fbGet('users') || {};
             const secondaryUsers = Object.values(usersObj);
             const secondaryMatch = secondaryUsers.find(u => u.name === user && u.pass === pass);
@@ -363,7 +364,6 @@
         }
 
         function showSection(id) {
-            // Restriction d'accès logiciel
             if(currentUserRole === "secondary" && !['inventory', 'stock'].includes(id)) {
                 return;
             }
