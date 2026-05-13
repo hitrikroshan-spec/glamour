@@ -3,11 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1a1a1a">
+
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Glamour Market">
     <link rel="apple-touch-icon" href="logo2.png">
-    <link rel="manifest" href="manifest.json">
 
     <title>Glamour Market - Client</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
@@ -194,6 +197,15 @@
     const DB_URL = "https://djami-e16ab-default-rtdb.firebaseio.com/";
     let currentPhone = "", cart = [];
 
+    // Enregistrement du Service Worker pour PWA
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js')
+            .then(reg => console.log('PWA Service Worker actif'))
+            .catch(err => console.log('Erreur SW:', err));
+        });
+    }
+
     async function handleAuth() {
         const phone = document.getElementById('userPhone').value.trim();
         const pass = document.getElementById('userPass').value.trim();
@@ -245,7 +257,6 @@
         cart.push({id, name, price, img});
         document.getElementById('cart-count').innerText = cart.length;
         updateCartUI();
-        // Feedback tactile
         if(window.navigator.vibrate) window.navigator.vibrate(50);
     }
 
