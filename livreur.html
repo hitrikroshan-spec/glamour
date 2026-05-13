@@ -5,11 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Livreur - Glamour Market</title>
     
+    <link rel="manifest" href="manifest_livreur.json">
+    <meta name="theme-color" content="#000000">
+
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Livreur GM">
     <link rel="apple-touch-icon" href="logo.png">
-  <link rel="manifest" href="manifest_livreur.json">
 
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -23,7 +25,7 @@
             display: flex; 
             justify-content: center; 
             color: white;
-            overflow: hidden; /* Empêche le rebond du navigateur */
+            overflow: hidden; 
             height: 100vh;
             width: 100vw;
             position: fixed;
@@ -36,7 +38,7 @@
             height: 100vh; 
             display: flex; 
             flex-direction: column; 
-            padding: 60px 20px 20px 20px; /* Padding haut pour la barre d'état iPhone */
+            padding: 60px 20px 20px 20px; 
         }
         
         .header { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; }
@@ -55,14 +57,13 @@
             font-size: 1rem;
         }
         
-        /* Liste de commandes */
         #deliveryList { 
             flex: 1; 
             overflow-y: auto; 
             padding-bottom: 20px;
-            scrollbar-width: none; /* Firefox */
+            scrollbar-width: none;
         }
-        #deliveryList::-webkit-scrollbar { display: none; } /* Chrome/Safari */
+        #deliveryList::-webkit-scrollbar { display: none; }
 
         .order-card { 
             background: #1a1a1a; 
@@ -114,7 +115,6 @@
         .is-done { opacity: 0.5; border-color: #2ecc71; }
         .is-done .btn-status { background: #333; color: #777; cursor: default; }
 
-        /* Animation au clic */
         .btn:active { transform: scale(0.95); }
     </style>
 </head>
@@ -131,16 +131,22 @@
     
     <input type="tel" id="searchBox" placeholder="Rechercher par téléphone..." oninput="renderDeliveries()">
 
-    <div id="deliveryList">
-        </div>
+    <div id="deliveryList"></div>
 </div>
 
 <script>
-    // URL de votre base de données Firebase
     const DB_URL = "https://djami-e16ab-default-rtdb.firebaseio.com/";
     let allOrders = {};
 
-    // Charger les données depuis Firebase
+    // Enregistrement du Service Worker pour PWA
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js')
+            .then(reg => console.log('PWA Livreur Active'))
+            .catch(err => console.log('Erreur SW Livreur:', err));
+        });
+    }
+
     async function loadData() {
         try {
             const res = await fetch(`${DB_URL}orders.json`);
@@ -151,18 +157,11 @@
         }
     }
 
-    // Afficher la liste des commandes avec filtre
     function renderDeliveries() {
         const filter = document.getElementById('searchBox').value;
         const list = document.getElementById('deliveryList');
-        
-        // Trier les IDs par ordre inverse (plus récent en haut)
         const sortedIds = Object.keys(allOrders).reverse();
-
-        // Filtrage par numéro de téléphone
-        const filteredIds = sortedIds.filter(id => 
-            !filter || allOrders[id].phone.includes(filter)
-        );
+        const filteredIds = sortedIds.filter(id => !filter || allOrders[id].phone.includes(filter));
 
         if (filteredIds.length === 0) {
             list.innerHTML = `<div style="text-align:center; color:#444; margin-top:50px;">Aucune commande trouvée</div>`;
@@ -172,7 +171,6 @@
         list.innerHTML = filteredIds.map(id => {
             const o = allOrders[id];
             const isLivre = o.status === 'livre';
-            
             return `
                 <div class="order-card ${isLivre ? 'is-done' : ''}">
                     <div class="card-top">
@@ -182,18 +180,13 @@
                         </div>
                         <div style="font-weight:600; color:#d4a373; font-size:1.1rem;">${o.total} F</div>
                     </div>
-
                     <div class="item-scroll">
-                        ${o.items.map(it => `
-                            <img src="${it.img}" alt="${it.name}" onerror="this.src='https://via.placeholder.com/60?text=Item'">
-                        `).join('')}
+                        ${o.items.map(it => `<img src="${it.img}" alt="${it.name}">`).join('')}
                     </div>
-
                     <div class="actions">
                         <button class="btn btn-status" onclick="updateStatus('${id}')" ${isLivre ? 'disabled' : ''}>
                             ${isLivre ? '<i class="fas fa-check-circle"></i> LIVRÉ' : '<i class="fas fa-truck"></i> MARQUER LIVRÉ'}
                         </button>
-                        
                         <button class="btn btn-delete" onclick="deleteOrder('${id}')">
                             <i class="fas fa-trash-alt"></i>
                         </button>
@@ -203,39 +196,26 @@
         }).join('');
     }
 
-    // Mettre à jour le statut en "LIVRÉ"
     async function updateStatus(id) {
         if(confirm("Voulez-vous marquer cette commande comme livrée ?")) {
             try {
-                await fetch(`${DB_URL}orders/${id}/status.json`, { 
-                    method: 'PUT', 
-                    body: JSON.stringify("livre") 
-                });
+                await fetch(`${DB_URL}orders/${id}/status.json`, { method: 'PUT', body: JSON.stringify("livre") });
                 loadData();
-            } catch (error) {
-                alert("Erreur lors de la mise à jour.");
-            }
+            } catch (error) { alert("Erreur lors de la mise à jour."); }
         }
     }
 
-    // Supprimer une commande de l'historique
     async function deleteOrder(id) {
         if(confirm("Supprimer définitivement cette commande de l'historique ?")) {
             try {
                 await fetch(`${DB_URL}orders/${id}.json`, { method: 'DELETE' });
-                loadData(); // Rafraîchir la liste
-            } catch (error) {
-                alert("Erreur lors de la suppression.");
-            }
+                loadData();
+            } catch (error) { alert("Erreur lors de la suppression."); }
         }
     }
 
-    // Initialisation
     window.onload = loadData;
-
-    // Rafraîchissement automatique toutes les 15 secondes pour les nouvelles commandes
-    setInterval(loadData, 15000);
+    setInterval(loadData, 15000); // Rafraîchissement automatique
 </script>
-
 </body>
 </html>
