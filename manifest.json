@@ -1,0 +1,23 @@
+{
+  "name": "Patronne Glamour Market",
+  "short_name": "Glamour Market",
+  "description": "Interface d'administration pour Glamour Market",
+  "start_url": "admin.html",
+  "display": "standalone",
+  "background_color": "#3d405b",
+  "theme_color": "#3d405b",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "logo3.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo3.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
