@@ -1,0 +1,23 @@
+{
+  "name": "Glamour Market - Client",
+  "short_name": "Glamour Client",
+  "description": "Espace Client Glamour Market",
+  "start_url": "client.html",
+  "display": "standalone",
+  "background_color": "#1a1a1a",
+  "theme_color": "#1a1a1a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "logo2.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo2.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
